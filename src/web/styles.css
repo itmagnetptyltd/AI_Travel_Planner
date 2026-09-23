@@ -1,0 +1,15 @@
+:root {
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+  color: #1a1a1a;
+}
+body { margin: 0 auto; max-width: 40rem; padding: 1.5rem; }
+nav { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; }
+.field { display: flex; flex-direction: column; margin-bottom: 1rem; }
+.field input, .field select { padding: 0.5rem; font-size: 1rem; }
+.field input[aria-invalid='true'] { border-color: #b00020; }
+.field-error, [role='alert'] { color: #b00020; }
+.hint { color: #555; font-size: 0.9rem; margin-top: -0.5rem; }
+.privacy-notice { background: #f3f6fa; border-left: 4px solid #2d5b9a; padding: 0.75rem 1rem; margin-bottom: 1rem; }
+button { padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer; }
+:focus-visible { outline: 3px solid #2d5b9a; outline-offset: 2px; }

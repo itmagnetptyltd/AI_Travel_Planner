@@ -15,7 +15,14 @@
   title: A visitor can register a Traveler account with an email address and password
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/accounts.spec.ts
+    - tests/api/registration.http.spec.ts
+    - tests/unit/breached-password-list.test.ts
+    - tests/unit/email-token-policy.test.ts
+    - tests/unit/password-hasher.test.ts
+    - tests/unit/password-policy.test.ts
   version: 1
   source: BRD v1.0 §17; §30 FR-01; §27; §25 Release 1; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -80,7 +87,12 @@
   title: A registered Traveler can log in with their email address and password
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/accounts.spec.ts
+    - tests/api/password-reset.http.spec.ts
+    - tests/api/sessions.http.spec.ts
+    - tests/unit/email-token-policy.test.ts
   version: 1
   source: BRD v1.0 §17; §30 FR-01; §5; §25 Release 1; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -108,7 +120,11 @@
   title: A login attempt with an incorrect password is refused
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/accounts.spec.ts
+    - tests/api/sessions.http.spec.ts
+    - tests/unit/account-service.test.ts
   version: 1
   source: BRD v1.0 §17; §22 Security; §30 FR-01
   acceptance:
@@ -122,7 +138,11 @@
   title: A logged-in Traveler can log out, ending their session
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/accounts.spec.ts
+    - tests/api/sessions.http.spec.ts
+    - tests/unit/session-service.test.ts
   version: 1
   source: BRD v1.0 §17; §30 FR-01
   acceptance:
@@ -136,7 +156,11 @@
   title: Trip pages and Trip API endpoints refuse callers who are not logged in
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/accounts.spec.ts
+    - tests/api/sessions.http.spec.ts
+    - tests/unit/require-traveler.test.ts
   version: 1
   source: BRD v1.0 §22 Security ("protect accounts, passwords, APIs"); §5 (journey begins with Register/Login)
   acceptance:
@@ -153,7 +177,9 @@
   title: A Traveler's password is never stored in the form it was entered
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - tests/unit/account-service.test.ts
   version: 1
   source: BRD v1.0 §22 Security ("protect accounts, passwords")
   acceptance:
@@ -215,7 +241,11 @@
   title: A logged-in Traveler can update their profile
   module: TRV
   priority: should
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/accounts.spec.ts
+    - tests/api/profile.http.spec.ts
+    - tests/unit/account-service.test.ts
   version: 1
   source: BRD v1.0 §17 (not in §30 matrix or §25 roadmap; priority raised as a question); clarified by client confirmation relayed in session 2026-09-23, §25 Release 1 (per client)
   acceptance:
@@ -229,7 +259,7 @@
   title: A Traveler can record a preferred currency, default travel style and food preference on their profile
   module: TRV
   priority: should
-  status: agreed
+  status: in_progress
   version: 1
   source: BRD v1.0 §17 ("Profile preferences may include preferred currency, default travel style and dietary preference"); clarified by client confirmation relayed in session 2026-09-23, §25 Release 1 (per client)
   acceptance:

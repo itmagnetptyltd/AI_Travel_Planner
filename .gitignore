@@ -56,3 +56,11 @@ desktop.ini
 **/.next/**
 **/coverage/**
 **/playwright-report/**
+
+# --- AI Travel Planner ---
+data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+.e2e/
+test-results/
