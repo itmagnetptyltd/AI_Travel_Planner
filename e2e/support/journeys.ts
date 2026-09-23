@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { expect, type Page } from '@playwright/test';
 import { E2E_OUTBOX_DIR } from '../../playwright.config';
 
-export const PASSWORD = 'amber-lantern-harbour';
+export const PASSWORD = 'amber-lantern-harbour'; // itm-sdlc:allow-secret - synthetic test password
 
 interface OutboxMessage {
   readonly to: string;
@@ -38,14 +38,14 @@ export async function linkFromEmail(address: string, subject: RegExp): Promise<s
   return `${url.pathname}${url.search}`;
 }
 
-export async function registerThroughUi(page: Page, email: string, password = PASSWORD): Promise<void> {
+export async function registerThroughUi(page: Page, email: string, password = PASSWORD): Promise<void> { // itm-sdlc:allow-secret - synthetic test password
   await page.goto('/register');
   await page.getByLabel('Email address').fill(email);
   await page.getByLabel('Password').fill(password);
   await page.getByRole('button', { name: 'Create account' }).click();
 }
 
-export async function logInThroughUi(page: Page, email: string, password = PASSWORD): Promise<void> {
+export async function logInThroughUi(page: Page, email: string, password = PASSWORD): Promise<void> { // itm-sdlc:allow-secret - synthetic test password
   await page.goto('/login');
   await page.getByLabel('Email address').fill(email);
   await page.getByLabel('Password').fill(password);

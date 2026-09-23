@@ -40,7 +40,7 @@ describe('POST /api/accounts', () => {
   test('an 11-character password returns 400 naming password and creates no account', async () => {
     const { app, db } = await buildTestApp();
 
-    const response = await register(app, aTraveler({ email: 'new@example.com', password: 'abcdefghijk' }));
+    const response = await register(app, aTraveler({ email: 'new@example.com', password: 'abcdefghijk' })); // itm-sdlc:allow-secret - synthetic test password
 
     expect(response.statusCode).toBe(400);
     expect(response.json()).toMatchObject({ code: 'VALIDATION_FAILED', field: 'password' });

@@ -49,7 +49,7 @@ describe('authentication', () => {
 
     const result = await service.authenticate({
       email: 'traveler@example.com',
-      password: 'wrong-password-123',
+      password: 'wrong-password-123', // itm-sdlc:allow-secret - synthetic test password
     });
 
     expect(result).toEqual({ ok: false });

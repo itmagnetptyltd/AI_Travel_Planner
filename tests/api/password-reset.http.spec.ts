@@ -5,7 +5,7 @@ import { linkIn } from '../support/capturing-email-service';
 import { MINUTE } from '../support/fixed-clock';
 import { aRegisteredTraveler, logIn, tokenFromLatestEmail } from '../support/a-traveler';
 
-const NEW_PASSWORD = 'violet-meadow-compass';
+const NEW_PASSWORD = 'violet-meadow-compass'; // itm-sdlc:allow-secret - synthetic test password
 
 function requestReset(app: FastifyInstance, email: string) {
   return app.inject({ method: 'POST', url: '/api/password-resets', payload: { email } });
@@ -58,7 +58,7 @@ describe('password reset', () => {
     const second = await app.inject({
       method: 'POST',
       url: '/api/password-resets/complete',
-      payload: { token, newPassword: 'another-new-password' },
+      payload: { token, newPassword: 'another-new-password' }, // itm-sdlc:allow-secret - synthetic test password
     });
 
     expect(second.statusCode).toBe(410);

@@ -1,7 +1,7 @@
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { linkIn, type CapturingEmailService } from './capturing-email-service';
 
-export const VALID_PASSWORD = 'amber-lantern-harbour';
+export const VALID_PASSWORD = 'amber-lantern-harbour'; // itm-sdlc:allow-secret - synthetic test password
 
 export interface TravelerDetails {
   readonly email: string;

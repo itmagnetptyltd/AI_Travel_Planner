@@ -6,7 +6,7 @@ import { createListBreachedPasswordChecker } from '../../src/server/accounts/bre
 import { aCapturingEmailService, type CapturingEmailService } from './capturing-email-service';
 import { aFixedClock, type FixedClock } from './fixed-clock';
 
-export const BREACHED_PASSWORD = 'password1234567890';
+export const BREACHED_PASSWORD = 'password1234567890'; // itm-sdlc:allow-secret - synthetic test password
 export const APP_BASE_URL = 'http://trv.test';
 
 export interface TestApp {

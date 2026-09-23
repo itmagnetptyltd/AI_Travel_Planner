@@ -21,7 +21,7 @@ describe('POST /api/sessions', () => {
     const { app } = await buildTestApp();
     const traveler = await aRegisteredTraveler(app);
 
-    const response = await logIn(app, { ...traveler, password: 'wrong-password-123' });
+    const response = await logIn(app, { ...traveler, password: 'wrong-password-123' }); // itm-sdlc:allow-secret - synthetic test password
 
     expect(response.statusCode).toBe(401);
     expect(response.json()).toMatchObject({ code: 'LOGIN_FAILED' });
