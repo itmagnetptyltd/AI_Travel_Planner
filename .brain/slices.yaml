@@ -1,0 +1,29 @@
+# Delivery slices.
+#
+# Requirement ids are the client's order — the order their brief happened to
+# mention things. Slice order is ours: which increments can actually be
+# demonstrated, and in what order. The two are unrelated, and the first slice
+# is rarely REQ-<MODULE>-001.
+#
+# `depends_on` gives a topological ordering, but topology alone groups the
+# runtime, the home page and the upload button into one level nobody can run.
+# The grouping is a judgement, so it is written here rather than derived.
+#
+# One slice is one branch, one /feature-plan, one /tdd, one /close-slice, one pull request.
+# /dashboard reads this file and shows each slice as Blocked, Not started,
+# In progress or Done, plus a Next column for the command to type.
+# A later slice cannot start until this one is Done.
+#
+# Delete these comments and list your slices:
+#
+# - id: 1
+#   name: Boot
+#   branch: feat/boot
+#   why: The app starts with one command and serves the home page
+#   covers: [REQ-EXAMPLE-013, REQ-EXAMPLE-014]
+#
+# - id: 2
+#   name: Grid
+#   branch: feat/grid
+#   why: The home page renders stored items — order, pagination, empty state
+#   covers: [REQ-EXAMPLE-001]
