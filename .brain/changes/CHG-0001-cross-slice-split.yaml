@@ -1,0 +1,70 @@
+id: CHG-0001
+raised: 2026-09-24
+stream: discovered_constraint
+source: "Developer (Kartik Chandra Biswas), /tdd session 2026-09-24, choosing option (b) from the slice 2 plan"
+raw: "(b) Split with /change-record (Recommended)"
+context: >-
+  Planning slice 2 (Admin and Destinations) found that 9 of its 28 acceptance
+  criteria can only be tested once later slices exist: Trips and soft delete
+  (slice 3), Plan generation (slice 4), Plan regeneration (slice 7) and Trip
+  reminders (slice 11). The build order in slices.yaml, not the client, is what
+  changed. Left as they were, those requirements could only reach `verified`
+  with criteria untested, or would hold slice 2 open until slice 11 while the
+  gate blocks slice 3. The developer chose to split them, so every requirement
+  lands whole in one slice. No criterion's wording changes: each is moved word
+  for word to a new requirement.
+affects: [REQ-TRV-068, REQ-TRV-071, REQ-TRV-072, REQ-TRV-074, REQ-TRV-075, REQ-TRV-078]
+creates: [REQ-TRV-091, REQ-TRV-092, REQ-TRV-093, REQ-TRV-094, REQ-TRV-095]
+moves:
+  - from: REQ-TRV-068 v1 criterion 9 (daily Plan generation limit)
+    to: REQ-TRV-091
+    slice: 4
+  - from: REQ-TRV-071 v1 criterion 3 (no reminder email to a disabled Traveler)
+    to: REQ-TRV-092
+    slice: 11
+  - from: REQ-TRV-072 v1 criterion 2 (Trip form offers enabled Kyoto)
+    to: REQ-TRV-093
+    slice: 3
+  - from: REQ-TRV-078 v1 criterion 2 (Trip takes the selected Destination record)
+    to: REQ-TRV-093
+    slice: 3
+  - from: REQ-TRV-074 v1 criterion 4 (Trip API refuses a disabled Destination)
+    to: REQ-TRV-093
+    slice: 3
+  - from: REQ-TRV-074 v1 criterion 3 (saved Trip to a disabled Destination can regenerate)
+    to: REQ-TRV-094
+    slice: 7
+  - from: REQ-TRV-075 v1 criteria 2 and 3 (removal refused while any Trip, including a soft-deleted one, uses it)
+    to: REQ-TRV-095
+    slice: 3
+analysis:
+  dependants:
+    # agreed requirements that now depend on a draft one; they cannot be planned
+    # until their dependency is re-agreed
+    - REQ-TRV-073   # depends on REQ-TRV-072; slice 2, otherwise unchanged
+    - REQ-TRV-064   # depends on REQ-TRV-068
+    - REQ-TRV-069   # depends on REQ-TRV-068
+    - REQ-TRV-070   # depends on REQ-TRV-068
+  tests_invalidated: 0   # no test is annotated with any affected requirement yet
+  estimate: "No build effort added or removed; the same 28 criteria are built, in the slices that can test them"
+  not_included: >-
+    REQ-TRV-010 (verified) has the same problem: criteria 2 and 3 need the Trip
+    form and saved Trips. It was suggested for this change but not confirmed by
+    the developer, so it is left unchanged.
+decision: absorbed
+commercial: >-
+  Absorbed, no charge: no criterion's wording changed and no scope was added or
+  removed. Decided by the developer 2026-09-24 (recorded in ANSWERS.md). The
+  client is to be informed of the regrouping in the next report.
+outcome:
+  - REQ-TRV-068: v2
+  - REQ-TRV-071: v2
+  - REQ-TRV-072: v2
+  - REQ-TRV-074: v2
+  - REQ-TRV-075: v2
+  - REQ-TRV-078: v2
+  - REQ-TRV-091: v1 (new, slice 4)
+  - REQ-TRV-092: v1 (new, slice 11)
+  - REQ-TRV-093: v1 (new, slice 3)
+  - REQ-TRV-094: v1 (new, slice 7)
+  - REQ-TRV-095: v1 (new, slice 3)

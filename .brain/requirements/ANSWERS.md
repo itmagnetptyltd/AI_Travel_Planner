@@ -333,3 +333,9 @@ A public web host (option a), always on, with HTTPS on its own address (e.g. `tr
 _What 'content' do Administrators manage, beyond users, Destinations and feedback?_
 
 Nothing beyond users, Destinations, feedback, notification settings and AI usage limits (option a). Site text and email templates are fixed in code for this demo.
+
+## CHG-0001: regrouping slice 2 criteria across slices
+
+_CHG-0001 moved 9 acceptance criteria, word for word, out of REQ-TRV-068, 071, 072, 074, 075 and 078 into new requirements REQ-TRV-091 to 095, so that each requirement can be tested in the slice that builds it. Are the regrouped requirements agreed?_
+
+**From the developer** (Kartik Chandra Biswas), session 2026-09-24: agreed as absorbed. No criterion's wording changed and no scope was added or removed; the client confirmed every moved criterion on 2026-09-23 as part of the v1 text. The client is to be informed of the regrouping in the next report, not asked first.

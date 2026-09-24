@@ -1796,8 +1796,17 @@
   module: TRV
   priority: must
   status: agreed
-  version: 1
-  source: BRD v1.0 §18; §4; §22 Security; clarified by client confirmation relayed in session 2026-09-23
+  version: 2
+  history:
+    - version: 1
+      agreed: 2026-09-23
+      superseded_by: 2
+      summary: >-
+        v1 also held the criterion that a Traveler asking for a sixth Plan generation in
+        a day, with the limit set to 5, is refused with a message stating when the limit
+        resets. Moved unchanged to REQ-TRV-091 by CHG-0001, because it needs Plan
+        generation (slice 4) and could not be tested in slice 2.
+  source: BRD v1.0 §18; §4; §22 Security; clarified by client confirmation relayed in session 2026-09-23; re-agreed after CHG-0001 by developer confirmation 2026-09-24
   acceptance:
     - given: A logged-in Traveler who is not an Administrator
       when: They request any admin API endpoint
@@ -1827,9 +1836,6 @@
       then: >-
         The functions offered are users, Destinations, feedback, notification settings
         and AI usage limits, and no editing of site text or email templates is offered
-    - given: An Administrator has set the daily Plan generation limit to 5
-      when: A Traveler asks for a sixth Plan generation that day
-      then: The request is refused with a message stating when the limit resets
   depends_on: [REQ-TRV-002]
   belts: [A, B, C]
 
@@ -1907,8 +1913,17 @@
   module: TRV
   priority: should
   status: agreed
-  version: 1
-  source: BRD v1.0 §18 ("Administrators can manage users, destinations and feedback"); §4; §30 FR-11; clarified by client confirmation relayed in session 2026-09-23
+  version: 2
+  history:
+    - version: 1
+      agreed: 2026-09-23
+      superseded_by: 2
+      summary: >-
+        v1 also held the criterion that no email addressed to a disabled Traveler is
+        captured when the reminder check runs for their Trip. Moved unchanged to
+        REQ-TRV-092 by CHG-0001, because it needs Trip reminders (slice 11) and could
+        not be tested in slice 2.
+  source: BRD v1.0 §18 ("Administrators can manage users, destinations and feedback"); §4; §30 FR-11; clarified by client confirmation relayed in session 2026-09-23; re-agreed after CHG-0001 by developer confirmation 2026-09-24
   acceptance:
     - given: Two registered Travelers
       when: An Administrator opens the user list
@@ -1918,11 +1933,6 @@
       then: >-
         T's next login is refused, and an audit log entry records the Administrator
         disabling T
-    - given: >-
-        A disabled Traveler T whose Trip reaches its reminder point, and a captured
-        outbound mail service
-      when: The reminder check runs
-      then: No email addressed to T is captured
     - given: A disabled Traveler T
       when: An Administrator re-enables T
       then: T can log in again
@@ -1942,17 +1952,23 @@
   module: TRV
   priority: should
   status: agreed
-  version: 1
-  source: BRD v1.0 §19; anchored to §18 ("Administrators can manage users, destinations and feedback") and §30 FR-11; clarified by client confirmation relayed in session 2026-09-23
+  version: 2
+  history:
+    - version: 1
+      agreed: 2026-09-23
+      superseded_by: 2
+      summary: >-
+        v1 also held the criterion that an enabled Destination Kyoto added by an
+        Administrator is offered when a Traveler creating a Trip opens the Destination
+        choice. Moved unchanged to REQ-TRV-093 by CHG-0001, because it needs the Trip
+        form (slice 3) and could not be tested in slice 2.
+  source: BRD v1.0 §19; anchored to §18 ("Administrators can manage users, destinations and feedback") and §30 FR-11; clarified by client confirmation relayed in session 2026-09-23; re-agreed after CHG-0001 by developer confirmation 2026-09-24
   acceptance:
     - given: A logged-in Administrator
       when: >-
         They add Destination Kyoto with a description, popular activities,
         recommended duration and travel information
       then: Kyoto appears in the Destination list with those four values
-    - given: An Administrator has added enabled Destination Kyoto
-      when: A Traveler creating a Trip opens the Destination choice
-      then: Kyoto is offered
     - given: >-
         Destination Kyoto with a description, popular activities, recommended duration
         and travel information
@@ -1980,8 +1996,19 @@
   module: TRV
   priority: should
   status: agreed
-  version: 1
-  source: BRD v1.0 §19 ("Administrators can add, edit, disable or remove destinations"); §18; §30 FR-11; clarified by client confirmation relayed in session 2026-09-23
+  version: 2
+  history:
+    - version: 1
+      agreed: 2026-09-23
+      superseded_by: 2
+      summary: >-
+        v1 also held two criteria: a saved Trip to Kyoto with a Plan still shows Kyoto
+        and can regenerate its Plan after Kyoto is disabled (moved to REQ-TRV-094), and
+        a new Trip submitted through the Trip API with disabled Kyoto is refused with the
+        Destination named as the invalid field (moved to REQ-TRV-093). Both moved
+        unchanged by CHG-0001, because they need Trips and Plan regeneration (slices 3
+        and 7) and could not be tested in slice 2.
+  source: BRD v1.0 §19 ("Administrators can add, edit, disable or remove destinations"); §18; §30 FR-11; clarified by client confirmation relayed in session 2026-09-23; re-agreed after CHG-0001 by developer confirmation 2026-09-24
   acceptance:
     - given: Destination Kyoto is enabled
       when: An Administrator disables it and a Traveler then searches Destinations for Kyoto
@@ -1989,16 +2016,6 @@
     - given: Destination Kyoto is disabled
       when: An Administrator opens the Destination list
       then: Kyoto is listed and marked as disabled
-    - given: >-
-        A saved Trip to Kyoto with a Plan, after which Kyoto is disabled, and an AI test
-        double
-      when: Its owner opens the Trip and regenerates the Plan
-      then: The Trip still shows Destination Kyoto and shows the regenerated Plan
-    - given: Destination Kyoto is disabled
-      when: >-
-        A Traveler submits a new Trip with Destination Kyoto through the Trip API
-      then: >-
-        The Trip is not created and the Destination is named as the invalid field
   depends_on: [REQ-TRV-072]
   belts: [A, B, C]
 
@@ -2007,18 +2024,21 @@
   module: TRV
   priority: should
   status: agreed
-  version: 1
-  source: BRD v1.0 §19 ("Administrators can add, edit, disable or remove destinations"); §18; §30 FR-11; clarified by client confirmation relayed in session 2026-09-23
+  version: 2
+  history:
+    - version: 1
+      agreed: 2026-09-23
+      superseded_by: 2
+      summary: >-
+        v1 also held two criteria: removal is refused while one saved Trip uses the
+        Destination, and refused while it is used only by a Trip its owner deleted 5
+        days ago. Moved unchanged to REQ-TRV-095 by CHG-0001, because they need saved
+        and soft-deleted Trips (slice 3) and could not be tested in slice 2.
+  source: BRD v1.0 §19 ("Administrators can add, edit, disable or remove destinations"); §18; §30 FR-11; clarified by client confirmation relayed in session 2026-09-23; re-agreed after CHG-0001 by developer confirmation 2026-09-24
   acceptance:
     - given: Destination Kyoto exists and no Trip uses it
       when: An Administrator removes it
       then: Kyoto no longer appears in the Administrator's Destination list
-    - given: Destination Kyoto is used by one saved Trip
-      when: An Administrator tries to remove it
-      then: The removal is refused, Kyoto is still listed, and the Trip is unchanged
-    - given: Destination Kyoto is used only by a Trip its owner deleted 5 days ago
-      when: An Administrator tries to remove it
-      then: The removal is refused and Kyoto is still listed
   depends_on: [REQ-TRV-072]
   belts: [A, B, C]
 
@@ -2064,16 +2084,21 @@
   module: TRV
   priority: should
   status: agreed
-  version: 1
-  source: BRD v1.0 §20 ("Users can search saved trips and destinations"); clarified by client confirmation relayed in session 2026-09-23, §25 Release 3 (per client)
+  version: 2
+  history:
+    - version: 1
+      agreed: 2026-09-23
+      superseded_by: 2
+      summary: >-
+        v1 also held the criterion that a Traveler creating a Trip who selects Kyoto from
+        the Destination search results gets the Kyoto record as the Trip's Destination,
+        shown with country Japan. Moved unchanged to REQ-TRV-093 by CHG-0001, because it
+        needs the Trip form (slice 3) and could not be tested in slice 2.
+  source: BRD v1.0 §20 ("Users can search saved trips and destinations"); clarified by client confirmation relayed in session 2026-09-23, §25 Release 3 (per client); re-agreed after CHG-0001 by developer confirmation 2026-09-24
   acceptance:
     - given: Enabled Destinations Kyoto and Tokyo
       when: A Traveler searches Destinations for "Kyo"
       then: Kyoto is returned and Tokyo is not
-    - given: An enabled Destination Kyoto in country Japan
-      when: >-
-        A Traveler creating a Trip selects Kyoto from the Destination search results
-      then: The Trip's Destination is the Kyoto record, shown with country Japan
   depends_on: [REQ-TRV-072]
   belts: [A, B, C]
 
@@ -2261,3 +2286,93 @@
       when: The Traveler views any Activity
       then: No option to book or pay for it is offered
   belts: [A]
+
+# ---------------------------------------------------------------------------
+# Split out of slice 2 requirements by CHG-0001 (2026-09-24). Criteria are
+# moved word for word from the v1 text named in each `source`.
+# ---------------------------------------------------------------------------
+- id: REQ-TRV-091
+  title: A Traveler past the daily Plan generation limit is refused with the reset time
+  module: TRV
+  priority: must
+  status: agreed
+  version: 1
+  source: CHG-0001; moved from REQ-TRV-068 v1 (BRD v1.0 §18; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0001 by developer confirmation 2026-09-24
+  acceptance:
+    - given: An Administrator has set the daily Plan generation limit to 5
+      when: A Traveler asks for a sixth Plan generation that day
+      then: The request is refused with a message stating when the limit resets
+  depends_on: [REQ-TRV-068, REQ-TRV-026]
+  belts: [A, B, C]
+
+- id: REQ-TRV-092
+  title: A disabled Traveler receives no Trip Reminder email
+  module: TRV
+  priority: should
+  status: agreed
+  version: 1
+  source: CHG-0001; moved from REQ-TRV-071 v1 (BRD v1.0 §18; §4; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0001 by developer confirmation 2026-09-24
+  acceptance:
+    - given: >-
+        A disabled Traveler T whose Trip reaches its reminder point, and a captured
+        outbound mail service
+      when: The reminder check runs
+      then: No email addressed to T is captured
+  depends_on: [REQ-TRV-071, REQ-TRV-057]
+  belts: [A, B, C]
+
+- id: REQ-TRV-093
+  title: A new Trip's Destination is chosen from enabled Destination records
+  module: TRV
+  priority: should
+  status: agreed
+  version: 1
+  source: CHG-0001; moved from REQ-TRV-072 v1, REQ-TRV-074 v1 and REQ-TRV-078 v1 (BRD v1.0 §19, §20; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0001 by developer confirmation 2026-09-24
+  acceptance:
+    - given: An Administrator has added enabled Destination Kyoto
+      when: A Traveler creating a Trip opens the Destination choice
+      then: Kyoto is offered
+    - given: An enabled Destination Kyoto in country Japan
+      when: >-
+        A Traveler creating a Trip selects Kyoto from the Destination search results
+      then: The Trip's Destination is the Kyoto record, shown with country Japan
+    - given: Destination Kyoto is disabled
+      when: >-
+        A Traveler submits a new Trip with Destination Kyoto through the Trip API
+      then: >-
+        The Trip is not created and the Destination is named as the invalid field
+  depends_on: [REQ-TRV-011, REQ-TRV-072, REQ-TRV-074, REQ-TRV-078]
+  belts: [A, B, C]
+
+- id: REQ-TRV-094
+  title: A saved Trip keeps working after its Destination is disabled
+  module: TRV
+  priority: should
+  status: agreed
+  version: 1
+  source: CHG-0001; moved from REQ-TRV-074 v1 (BRD v1.0 §19; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0001 by developer confirmation 2026-09-24
+  acceptance:
+    - given: >-
+        A saved Trip to Kyoto with a Plan, after which Kyoto is disabled, and an AI test
+        double
+      when: Its owner opens the Trip and regenerates the Plan
+      then: The Trip still shows Destination Kyoto and shows the regenerated Plan
+  depends_on: [REQ-TRV-074, REQ-TRV-041]
+  belts: [A, B, C]
+
+- id: REQ-TRV-095
+  title: A Destination used by any Trip, including a deleted one, cannot be removed
+  module: TRV
+  priority: should
+  status: agreed
+  version: 1
+  source: CHG-0001; moved from REQ-TRV-075 v1 (BRD v1.0 §19; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0001 by developer confirmation 2026-09-24
+  acceptance:
+    - given: Destination Kyoto is used by one saved Trip
+      when: An Administrator tries to remove it
+      then: The removal is refused, Kyoto is still listed, and the Trip is unchanged
+    - given: Destination Kyoto is used only by a Trip its owner deleted 5 days ago
+      when: An Administrator tries to remove it
+      then: The removal is refused and Kyoto is still listed
+  depends_on: [REQ-TRV-075, REQ-TRV-011, REQ-TRV-015]
+  belts: [A, B, C]
