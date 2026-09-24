@@ -22,6 +22,7 @@ export interface AccountView {
   readonly email: string;
   readonly role: 'traveler' | 'administrator';
   readonly isEmailConfirmed: boolean;
+  readonly isDisabled: boolean;
 }
 
 type InvalidPassword = {
@@ -106,7 +107,8 @@ export function createAccountService(deps: AccountServiceDeps): AccountService {
     async authenticate(input) {
       const account = findByEmail(input.email);
       const isValid = await verifyPassword(account?.passwordHash ?? (await hashForUnknownAccount()), input.password);
-      return account && isValid ? { ok: true, accountId: account.id } : { ok: false };
+      // A disabled account gets the same refusal as a wrong password (REQ-TRV-071).
+      return account && isValid && account.disabledAt === null ? { ok: true, accountId: account.id } : { ok: false };
     },
 
     async confirmEmail(rawToken) {
@@ -155,6 +157,7 @@ export function createAccountService(deps: AccountServiceDeps): AccountService {
         email: account.email,
         role: account.role,
         isEmailConfirmed: account.emailConfirmedAt !== null,
+        isDisabled: account.disabledAt !== null,
       };
     },
 

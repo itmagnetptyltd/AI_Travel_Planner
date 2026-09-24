@@ -11,6 +11,8 @@ export interface SessionService {
   start(accountId: string): Promise<string>;
   findAccountId(rawSessionId: string): Promise<string | null>;
   end(rawSessionId: string): Promise<void>;
+  /** Ends every session the account has, so a disabled account is logged out at once. */
+  endAllFor(accountId: string): void;
 }
 
 export function createSessionService(db: TrvDatabase, clock: Clock): SessionService {
@@ -39,6 +41,10 @@ export function createSessionService(db: TrvDatabase, clock: Clock): SessionServ
 
     async end(rawSessionId) {
       db.delete(sessions).where(eq(sessions.idHash, hashSecretToken(rawSessionId))).run();
+    },
+
+    endAllFor(accountId) {
+      db.delete(sessions).where(eq(sessions.accountId, accountId)).run();
     },
   };
 }

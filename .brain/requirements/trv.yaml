@@ -1795,7 +1795,12 @@
   title: Only Administrators can open the admin dashboard and admin functions
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/admin-destinations.spec.ts
+    - tests/api/admin-access.http.spec.ts
+    - tests/unit/admin-access.test.ts
+    - tests/unit/admin-account-service.test.ts
   version: 2
   history:
     - version: 1
@@ -1912,7 +1917,11 @@
   title: An Administrator can manage user accounts
   module: TRV
   priority: should
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/admin-destinations.spec.ts
+    - tests/api/admin-accounts.http.spec.ts
+    - tests/unit/admin-account-service.test.ts
   version: 2
   history:
     - version: 1
@@ -1951,7 +1960,11 @@
   title: An Administrator can add a Destination with its description and travel information
   module: TRV
   priority: should
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/admin-destinations.spec.ts
+    - tests/api/destinations.http.spec.ts
+    - tests/unit/destination-service.test.ts
   version: 2
   history:
     - version: 1
@@ -1981,7 +1994,11 @@
   title: An Administrator can edit a Destination
   module: TRV
   priority: should
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/admin-destinations.spec.ts
+    - tests/api/destinations.http.spec.ts
+    - tests/unit/destination-service.test.ts
   version: 1
   source: BRD v1.0 §19 ("Administrators can add, edit, disable or remove destinations"); §18; §30 FR-11
   acceptance:
@@ -1995,7 +2012,11 @@
   title: A disabled Destination is not offered to Travelers
   module: TRV
   priority: should
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/admin-destinations.spec.ts
+    - tests/api/destinations.http.spec.ts
+    - tests/unit/destination-service.test.ts
   version: 2
   history:
     - version: 1
@@ -2023,7 +2044,11 @@
   title: An Administrator can remove a Destination
   module: TRV
   priority: should
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/admin-destinations.spec.ts
+    - tests/api/destinations.http.spec.ts
+    - tests/unit/destination-service.test.ts
   version: 2
   history:
     - version: 1
@@ -2083,7 +2108,11 @@
   title: A Traveler can search the Destination list
   module: TRV
   priority: should
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/admin-destinations.spec.ts
+    - tests/api/destinations.http.spec.ts
+    - tests/unit/destination-service.test.ts
   version: 2
   history:
     - version: 1

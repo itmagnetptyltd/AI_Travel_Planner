@@ -13,6 +13,10 @@ import { createSessionService } from './accounts/session-service';
 import { accountRoutes } from './accounts/account-routes';
 import { profileRoutes } from './accounts/profile-routes';
 import { tripRoutes } from './trips/trip-routes';
+import { createAdminAccountService } from './admin/admin-account-service';
+import { adminRoutes, type AdminRoute } from './admin/admin-routes';
+import { createDestinationService } from './destinations/destination-service';
+import { destinationRoutes } from './destinations/destination-routes';
 
 export interface AppDeps {
   readonly db: TrvDatabase;
@@ -48,6 +52,10 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     appBaseUrl: deps.appBaseUrl,
   });
   const sessions = createSessionService(deps.db, deps.clock);
+  const destinations = createDestinationService({ db: deps.db, clock: deps.clock });
+  const adminAccounts = createAdminAccountService({ db: deps.db, clock: deps.clock, sessions });
+  const registeredAdminRoutes: AdminRoute[] = [];
+  app.decorate('adminRoutes', registeredAdminRoutes);
 
   app.get('/api/health', async () => ({ status: 'ok' }));
   await accountRoutes(app, {
@@ -58,6 +66,8 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   });
   await profileRoutes(app, { accounts, sessions });
   await tripRoutes(app, { accounts, sessions });
+  await destinationRoutes(app, { sessions, destinations });
+  await adminRoutes(app, { accounts, sessions, adminAccounts, destinations, registeredRoutes: registeredAdminRoutes });
 
   if (deps.webRoot && existsSync(deps.webRoot)) {
     await serveWebApp(app, deps.webRoot);
@@ -74,4 +84,11 @@ async function serveWebApp(app: FastifyInstance, webRoot: string): Promise<void>
     }
     return reply.code(404).send({ code: 'NOT_FOUND' });
   });
+}
+
+declare module 'fastify' {
+  interface FastifyInstance {
+    /** Every /api/admin route, as registered. Read by the test that proves each one is guarded. */
+    adminRoutes: readonly AdminRoute[];
+  }
 }
