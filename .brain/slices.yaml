@@ -27,3 +27,87 @@
 #   branch: feat/grid
 #   why: The home page renders stored items — order, pagination, empty state
 #   covers: [REQ-EXAMPLE-001]
+
+- id: 1
+  name: Accounts
+  branch: feat/trv-accounts
+  why: "A visitor registers, confirms their email, logs in and out, resets a password and edits their profile preferences"
+  covers: [REQ-TRV-001, REQ-TRV-002, REQ-TRV-003, REQ-TRV-004, REQ-TRV-005, REQ-TRV-006, REQ-TRV-009, REQ-TRV-010]
+
+- id: 2
+  name: Admin and Destinations
+  branch: feat/trv-destinations
+  why: "An Administrator manages users and the Destination list; Travelers can search Destinations"
+  covers: [REQ-TRV-068, REQ-TRV-071, REQ-TRV-072, REQ-TRV-073, REQ-TRV-074, REQ-TRV-075, REQ-TRV-078]
+
+- id: 3
+  name: Trips
+  branch: feat/trv-trips
+  why: "A Traveler creates, lists, edits and deletes their own Draft Trips, with validation and in-app success/failure messages"
+  covers: [REQ-TRV-011, REQ-TRV-012, REQ-TRV-013, REQ-TRV-014, REQ-TRV-015, REQ-TRV-016, REQ-TRV-007, REQ-TRV-061]
+
+- id: 4
+  name: AI Plan generation
+  branch: feat/trv-plan-generation
+  why: "The AI produces a day-by-day Plan through its own service layer, labelled as recommendations, with a fallback when the AI fails"
+  covers: [REQ-TRV-081, REQ-TRV-026, REQ-TRV-027, REQ-TRV-029, REQ-TRV-030, REQ-TRV-031, REQ-TRV-033, REQ-TRV-034, REQ-TRV-044]
+
+- id: 5
+  name: Save and reopen
+  branch: feat/trv-save-reopen
+  why: "A generated Plan is saved as a version, reopens exactly as saved and survives a restart"
+  covers: [REQ-TRV-017, REQ-TRV-018, REQ-TRV-019]
+
+- id: 6
+  name: Preferences and personalization
+  branch: feat/trv-preferences
+  why: "Travel style, interests, food, transportation and accommodation preferences are recorded and shape the generated Plan"
+  covers: [REQ-TRV-020, REQ-TRV-021, REQ-TRV-022, REQ-TRV-023, REQ-TRV-024, REQ-TRV-025, REQ-TRV-028]
+
+- id: 7
+  name: Edit and regenerate
+  branch: feat/trv-edit-regenerate
+  why: "A Traveler edits, removes, replaces and moves Activities, and regenerates the whole Plan or one Day"
+  covers: [REQ-TRV-041, REQ-TRV-042, REQ-TRV-043, REQ-TRV-045, REQ-TRV-046, REQ-TRV-047, REQ-TRV-048]
+
+- id: 8
+  name: AI chat
+  branch: feat/trv-chat
+  why: "A chat box on the Trip answers questions and proposes Plan changes the Traveler previews and accepts"
+  covers: [REQ-TRV-035, REQ-TRV-036, REQ-TRV-037, REQ-TRV-038, REQ-TRV-039, REQ-TRV-040]
+
+- id: 9
+  name: Search and filter Trips
+  branch: feat/trv-search
+  why: "A Traveler searches and filters their saved Trips"
+  covers: [REQ-TRV-076, REQ-TRV-077]
+
+- id: 10
+  name: Budget estimation
+  branch: feat/trv-budget
+  why: "A Trip shows category cost estimates and a total against the budget, and the chat can reduce cost"
+  covers: [REQ-TRV-049, REQ-TRV-050, REQ-TRV-051, REQ-TRV-052, REQ-TRV-053]
+
+- id: 11
+  name: Email
+  branch: feat/trv-email
+  why: "Trip Created, Plan, Itinerary Updated, Reminder and Share emails are sent, labelled and switchable"
+  covers: [REQ-TRV-054, REQ-TRV-032, REQ-TRV-055, REQ-TRV-056, REQ-TRV-057, REQ-TRV-058, REQ-TRV-059, REQ-TRV-060]
+
+- id: 12
+  name: Feedback and admin dashboard
+  branch: feat/trv-feedback-dashboard
+  why: "Travelers rate Plans; Administrators review feedback, see Trips and metrics; only two roles exist"
+  covers: [REQ-TRV-062, REQ-TRV-063, REQ-TRV-064, REQ-TRV-065, REQ-TRV-069, REQ-TRV-070, REQ-TRV-079]
+
+- id: 13
+  name: AI feedback analysis
+  branch: feat/trv-feedback-analysis
+  why: "The AI summarises feedback and names recurring themes for Administrators"
+  covers: [REQ-TRV-066, REQ-TRV-067]
+
+- id: 14
+  name: Performance
+  branch: feat/trv-performance
+  why: "Pages, Plan generation and chat meet the agreed times with 25 simultaneous users"
+  covers: [REQ-TRV-080]

@@ -1,0 +1,13 @@
+{"level":30,"time":1790163046984,"pid":4608,"hostname":"ITMWS-DEV-110","msg":"Server listening at http://127.0.0.1:3000"}
+{"level":30,"time":1790163050657,"pid":4608,"hostname":"ITMWS-DEV-110","reqId":"req-1","req":{"method":"GET","url":"/api/health","host":"127.0.0.1:3000","remoteAddress":"127.0.0.1","remotePort":62030},"msg":"incoming request"}
+{"level":30,"time":1790163050662,"pid":4608,"hostname":"ITMWS-DEV-110","reqId":"req-1","res":{"statusCode":200},"responseTime":3.9292999999997846,"msg":"request completed"}
+{"level":30,"time":1790163050690,"pid":4608,"hostname":"ITMWS-DEV-110","reqId":"req-2","req":{"method":"GET","url":"/register","host":"127.0.0.1:3000","remoteAddress":"127.0.0.1","remotePort":62031},"msg":"incoming request"}
+{"level":30,"time":1790163050693,"pid":4608,"hostname":"ITMWS-DEV-110","reqId":"req-2","res":{"statusCode":200},"responseTime":3.802099999999882,"msg":"request completed"}
+{"level":30,"time":1790163054631,"pid":4608,"hostname":"ITMWS-DEV-110","reqId":"req-3","req":{"method":"GET","url":"/register","host":"127.0.0.1:3000","remoteAddress":"127.0.0.1","remotePort":57588},"msg":"incoming request"}
+{"level":30,"time":1790163054634,"pid":4608,"hostname":"ITMWS-DEV-110","reqId":"req-3","res":{"statusCode":200},"responseTime":2.6576999999997497,"msg":"request completed"}
+{"level":30,"time":1790163054675,"pid":4608,"hostname":"ITMWS-DEV-110","reqId":"req-4","req":{"method":"GET","url":"/assets/index-DEIfgpX6.js","host":"127.0.0.1:3000","remoteAddress":"127.0.0.1","remotePort":57588},"msg":"incoming request"}
+{"level":30,"time":1790163054676,"pid":4608,"hostname":"ITMWS-DEV-110","reqId":"req-5","req":{"method":"GET","url":"/assets/index-BJpCC-mO.css","host":"127.0.0.1:3000","remoteAddress":"127.0.0.1","remotePort":59906},"msg":"incoming request"}
+{"level":30,"time":1790163054679,"pid":4608,"hostname":"ITMWS-DEV-110","reqId":"req-5","res":{"statusCode":200},"responseTime":2.8966999999993277,"msg":"request completed"}
+{"level":30,"time":1790163054682,"pid":4608,"hostname":"ITMWS-DEV-110","reqId":"req-4","res":{"statusCode":200},"responseTime":7.152799999999843,"msg":"request completed"}
+{"level":30,"time":1790163054778,"pid":4608,"hostname":"ITMWS-DEV-110","reqId":"req-6","req":{"method":"GET","url":"/favicon.ico","host":"127.0.0.1:3000","remoteAddress":"127.0.0.1","remotePort":57588},"msg":"incoming request"}
+{"level":30,"time":1790163054779,"pid":4608,"hostname":"ITMWS-DEV-110","reqId":"req-6","res":{"statusCode":200},"responseTime":1.492500000000291,"msg":"request completed"}
