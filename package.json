@@ -15,7 +15,8 @@
     "test": "vitest run",
     "coverage": "vitest run --coverage",
     "test:integration": "playwright test",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "seed:admin": "tsx scripts/seed-administrator.ts"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",

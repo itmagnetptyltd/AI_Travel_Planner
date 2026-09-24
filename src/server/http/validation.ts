@@ -57,3 +57,8 @@ export async function replyTokenRefused(
   const { status, code, message } = TOKEN_MESSAGES[error];
   await reply.code(status).send({ code, message });
 }
+
+/** Parses a query string against a schema, replying 400 exactly as parseBody does. */
+export async function parseQuery<T>(schema: z.ZodType<T>, query: unknown, reply: FastifyReply): Promise<Parsed<T>> {
+  return parseBody(schema, query, reply);
+}

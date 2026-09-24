@@ -2,7 +2,7 @@ import { useId, type ChangeEvent } from 'react';
 
 interface FormFieldProps {
   readonly label: string;
-  readonly type?: 'text' | 'email' | 'password';
+  readonly type?: 'text' | 'email' | 'password' | 'number';
   readonly value: string;
   readonly onChange: (value: string) => void;
   readonly error?: string | undefined;
