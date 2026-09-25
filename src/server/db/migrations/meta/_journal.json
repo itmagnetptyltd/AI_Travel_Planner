@@ -15,6 +15,13 @@
       "when": 1790251637538,
       "tag": "0001_admin_destinations",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790308585834,
+      "tag": "0002_trips",
+      "breakpoints": true
     }
   ]
 }

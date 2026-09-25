@@ -193,7 +193,11 @@
   title: A Traveler can see and change only their own Trips
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/trips.spec.ts
+    - tests/api/trip-access.http.spec.ts
+    - tests/unit/trip-service.test.ts
   version: 2
   history:
     - version: 1
@@ -297,7 +301,12 @@
   title: A Traveler can create a Trip with name, Destination, dates, travelers, budget and currency
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/trips.spec.ts
+    - tests/api/trips.http.spec.ts
+    - tests/unit/trip-schemas.test.ts
+    - tests/unit/trip-service.test.ts
   version: 2
   history:
     - version: 1
@@ -375,7 +384,12 @@
   title: A Trip whose end date is before its start date is refused
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/trips.spec.ts
+    - tests/api/trips.http.spec.ts
+    - tests/unit/trip-schemas.test.ts
+    - tests/unit/trip-service.test.ts
   version: 2
   history:
     - version: 1
@@ -415,7 +429,10 @@
   title: A Trip with a negative budget is refused
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - tests/api/trips.http.spec.ts
+    - tests/unit/trip-schemas.test.ts
   version: 1
   source: BRD v1.0 §6 (budget); §11 (estimated total compared with budget)
   acceptance:
@@ -429,7 +446,11 @@
   title: A Traveler can edit the details of a saved Trip
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/trips.spec.ts
+    - tests/api/trips.http.spec.ts
+    - tests/unit/trip-service.test.ts
   version: 2
   history:
     - version: 1
@@ -454,7 +475,11 @@
   title: A Traveler can delete a saved Trip
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/trips.spec.ts
+    - tests/api/trips.http.spec.ts
+    - tests/unit/trip-service.test.ts
   version: 2
   history:
     - version: 1
@@ -479,7 +504,11 @@
   title: A Traveler can see a list of their saved Trips
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/trips.spec.ts
+    - tests/api/trips.http.spec.ts
+    - tests/unit/trip-service.test.ts
   version: 1
   source: BRD v1.0 §13 ("Users can save generated trips and reopen them later"); §30 FR-08; §25 Release 1
   acceptance:
@@ -1602,7 +1631,10 @@
   title: The Traveler is told in the application whether each operation succeeded or failed
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/trips.spec.ts
+    - tests/unit/trip-form-state.test.ts
   version: 1
   source: BRD v1.0 §21 ("The system should provide in-app feedback for successful or failed operations"); §21 is headed Notifications, anchored to §30 FR-09
   acceptance:
@@ -2339,7 +2371,11 @@
   title: A new Trip's Destination is chosen from enabled Destination records
   module: TRV
   priority: should
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/trips.spec.ts
+    - tests/api/trips.http.spec.ts
+    - tests/unit/trip-service.test.ts
   version: 1
   source: CHG-0001; moved from REQ-TRV-072 v1, REQ-TRV-074 v1 and REQ-TRV-078 v1 (BRD v1.0 §19, §20; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0001 by developer confirmation 2026-09-24
   acceptance:
@@ -2378,7 +2414,11 @@
   title: A Destination used by any Trip, including a deleted one, cannot be removed
   module: TRV
   priority: should
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/trips.spec.ts
+    - tests/api/trips.http.spec.ts
+    - tests/unit/trip-service.test.ts
   version: 1
   source: CHG-0001; moved from REQ-TRV-075 v1 (BRD v1.0 §19; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0001 by developer confirmation 2026-09-24
   acceptance:

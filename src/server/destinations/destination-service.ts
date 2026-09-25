@@ -2,10 +2,12 @@ import { randomUUID } from 'node:crypto';
 import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 import type { Clock } from '../clock';
 import type { TrvDatabase } from '../db/client';
-import { destinations } from '../db/schema';
+import { destinations, trips } from '../db/schema';
 import type { DestinationInput, DestinationUpdate } from '../../shared/destination-schemas';
 
 export const SEARCH_RESULT_LIMIT = 20;
+
+export type DestinationRemoval = 'removed' | 'not-found' | 'in-use';
 
 export interface Destination extends DestinationInput {
   readonly id: string;
@@ -22,8 +24,8 @@ export interface DestinationService {
   add(input: DestinationInput): Destination;
   edit(id: string, update: DestinationUpdate): Destination | null;
   setDisabled(id: string, isDisabled: boolean): Destination | null;
-  /** Hard delete. Returns false when there was nothing to remove. */
-  remove(id: string): boolean;
+  /** Hard delete, refused while any Trip, deleted ones included, uses the Destination (REQ-TRV-095). */
+  remove(id: string): DestinationRemoval;
   listForAdmin(): readonly Destination[];
   /** Enabled Destinations whose name starts with the query, case-insensitively (REQ-TRV-078). */
   search(query: string): readonly DestinationSummary[];
@@ -60,7 +62,10 @@ export function createDestinationService(deps: { readonly db: TrvDatabase; reado
     },
 
     remove(id) {
-      return db.delete(destinations).where(eq(destinations.id, id)).run().changes > 0;
+      if (db.select({ id: trips.id }).from(trips).where(eq(trips.destinationId, id)).get()) {
+        return 'in-use';
+      }
+      return db.delete(destinations).where(eq(destinations.id, id)).run().changes > 0 ? 'removed' : 'not-found';
     },
 
     listForAdmin() {

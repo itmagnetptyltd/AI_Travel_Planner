@@ -1,4 +1,7 @@
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { CURRENCIES } from '../../shared/currencies';
+import type { TravelStyle } from '../../shared/travel-styles';
+import { TRIP_STATUSES } from '../../shared/trip-schemas';
 
 export const accounts = sqliteTable('accounts', {
   id: text('id').primaryKey(),
@@ -45,6 +48,37 @@ export const destinations = sqliteTable('destinations', {
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 });
+
+/**
+ * Dates are calendar dates (`YYYY-MM-DD`), not instants. The number of travelers is
+ * never stored: it is always adults plus children. A deleted Trip keeps its row, with
+ * `deleted_at` set, so it still holds its Destination (REQ-TRV-095).
+ */
+export const trips = sqliteTable(
+  'trips',
+  {
+    id: text('id').primaryKey(),
+    ownerAccountId: text('owner_account_id')
+      .notNull()
+      .references(() => accounts.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    destinationId: text('destination_id')
+      .notNull()
+      .references(() => destinations.id, { onDelete: 'restrict' }),
+    startDate: text('start_date').notNull(),
+    endDate: text('end_date').notNull(),
+    adults: integer('adults').notNull(),
+    children: integer('children').notNull(),
+    budget: integer('budget').notNull(),
+    currency: text('currency', { enum: CURRENCIES }).notNull(),
+    travelStyles: text('travel_styles', { mode: 'json' }).$type<TravelStyle[]>().notNull(),
+    status: text('status', { enum: TRIP_STATUSES }).notNull(),
+    deletedAt: integer('deleted_at', { mode: 'timestamp_ms' }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [index('trips_owner_deleted_idx').on(table.ownerAccountId, table.deletedAt)],
+);
 
 /** Only ever added to; rows are never updated or deleted. */
 export const auditLog = sqliteTable('audit_log', {
