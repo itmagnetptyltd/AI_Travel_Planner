@@ -120,10 +120,26 @@ Never commit `.env`. Keep real secrets out of `.env.example`.
 | `npm run test:integration` | Runs the Playwright browser tests |
 | `npm run db:generate` | Generates a Drizzle migration from `src/server/db/schema.ts` |
 | `npm run seed:admin -- <email>` | Creates an Administrator |
+| `npm run load-test -- <base-url> --email <email>` | Checks response times against a running address (see below) |
 
 The browser tests start their own server on port 5174, with a fresh database
 and a file outbox, so they don't need your `.env`. To watch them run in
 Chromium, use `/run-browsertest` or `scripts/run-browsertest.cmd`.
+
+### Checking response times
+
+The agreed times are: 95% of ordinary pages under 2 seconds with 25 people at once, a 7-Day Plan within 60 seconds, and the
+fallback message after 120 seconds. The automated tests prove the application meets the first on this machine over real HTTP.
+To check a deployed address, sign in as a confirmed Traveler who has a Trip with a Plan:
+
+```
+LOAD_TEST_PASSWORD=... npm run load-test -- https://your-host --email traveler@example.com
+LOAD_TEST_PASSWORD=... npm run load-test -- https://your-host --email traveler@example.com --generate
+```
+
+It prints the 95th percentile and exits non-zero if the agreed time is missed or any request failed. `--generate` also creates a
+7-Day Trip, times its Plan against the real AI, and deletes the Trip; the host needs its real AI key for that. The password is
+read from the environment so it stays out of shell history.
 
 ## Layout
 
@@ -133,7 +149,7 @@ src/shared/   zod schemas and reference lists used by both server and web
 src/web/      React app: pages, components, API client
 tests/api/    HTTP-level tests
 e2e/          Playwright browser tests
-scripts/      Admin seed and browser-test launcher
+scripts/      Admin seed, browser-test launcher and load test
 .brain/       Project record: requirements, decisions, constraints, changes
 ```
 

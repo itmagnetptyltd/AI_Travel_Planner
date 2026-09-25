@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { PROPOSAL_NOT_PENDING, PROPOSAL_STALE, type ChatMessage } from '../../shared/chat-schemas';
 import type { SavedPlan } from '../../shared/plan-schemas';
 import { api } from '../api-client';
 import { chatProblem, mergeMessages, replaceMessage } from './chat-view-state';
+import { endingOf, foldStreamEvent, NOTHING_STREAMED, streamChatMessage } from './chat-stream';
 
 export interface ChatController {
   readonly messages: readonly ChatMessage[];
@@ -15,6 +16,8 @@ export interface ChatController {
   readonly problem: string | null;
   /** Said to a screen reader as the chat changes: that the AI is answering, and that it has. */
   readonly announcement: string;
+  /** While a reply is arriving: what was asked, and as much of the reply as has come. Null the rest of the time. */
+  readonly arriving: { readonly question: string; readonly reply: string } | null;
   readonly send: () => Promise<void>;
   readonly accept: (messageId: string) => Promise<void>;
   readonly reject: (messageId: string) => Promise<void>;
@@ -33,7 +36,16 @@ export function useChat(tripId: string, onPlanChanged: (plan: SavedPlan) => void
   const [isDeciding, setIsDeciding] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
+  const [arriving, setArriving] = useState<{ readonly question: string; readonly reply: string } | null>(null);
   const chatPath = `/api/trips/${encodeURIComponent(tripId)}/chat`;
+  // A reply can take up to two minutes; a Traveler who has left the page by then must not have it drawn into another Trip's chat.
+  const isMounted = useRef(true);
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, [tripId]);
 
   const load = useCallback(async (isCurrent: () => boolean) => {
     const result = await api<{ messages: readonly ChatMessage[] }>('GET', chatPath);
@@ -57,13 +69,23 @@ export function useChat(tripId: string, onPlanChanged: (plan: SavedPlan) => void
     setProblem(null);
     setIsSending(true);
     setAnnouncement('Waiting for the AI to answer.');
-    const result = await api<{ messages: readonly ChatMessage[] }>('POST', chatPath, { message: text });
+    setArriving({ question: text, reply: '' });
+    let reply = NOTHING_STREAMED;
+    const started = await streamChatMessage(chatPath, text, (event) => {
+      reply = foldStreamEvent(reply, event);
+      if (isMounted.current) setArriving({ question: text, reply: reply.text });
+    });
+    if (!isMounted.current) return;
     setIsSending(false);
-    if (!result.ok) {
+    setArriving(null);
+    const ending = endingOf(started, reply);
+    if (ending.kind === 'problem') {
       setAnnouncement('');
-      return setProblem(chatProblem(result.error));
+      setProblem(chatProblem(ending.error));
+      if (ending.shouldReloadChat) await load(() => isMounted.current);
+      return;
     }
-    setMessages((previous) => mergeMessages(previous, result.data.messages));
+    setMessages((previous) => mergeMessages(previous, ending.messages));
     // Only what was sent is cleared: anything typed while the AI was answering is the Traveler's next message.
     setDraft((current) => (current.trim() === text ? '' : current));
     setAnnouncement('The AI has replied.');
@@ -93,6 +115,7 @@ export function useChat(tripId: string, onPlanChanged: (plan: SavedPlan) => void
     isDeciding,
     problem,
     announcement,
+    arriving,
     send,
     accept: (messageId) => decide(messageId, 'accept'),
     reject: (messageId) => decide(messageId, 'reject'),

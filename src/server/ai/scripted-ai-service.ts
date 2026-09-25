@@ -111,6 +111,18 @@ function replyTextFor(request: { readonly system: string; readonly user: string 
   return planText(script.dayCount, script.label);
 }
 
+const PIECE_CHARS = 24;
+const PIECE_DELAY_MS = 15;
+
+/** Hands `text` over a few characters at a time, as a provider that streams would, so the browser tests exercise the streamed path. */
+async function writeInPieces(text: string, onText: (delta: string) => void, signal: AbortSignal): Promise<void> {
+  for (let start = 0; start < text.length; start += PIECE_CHARS) {
+    if (signal.aborted) throw new AiUnavailableError('The scripted AI was cut off.');
+    onText(text.slice(start, start + PIECE_CHARS));
+    await new Promise((resolve) => setTimeout(resolve, PIECE_DELAY_MS));
+  }
+}
+
 export function createScriptedAiService(scriptFile: string): AiService {
   return {
     async complete(request): Promise<AiReply> {
@@ -121,7 +133,9 @@ export function createScriptedAiService(scriptFile: string): AiService {
           request.signal.addEventListener('abort', () => reject(new AiUnavailableError('The scripted AI never answered.')));
         });
       }
-      return { text: replyTextFor(request, script), inputTokens: 500, outputTokens: 1_500 };
+      const text = replyTextFor(request, script);
+      if (request.onText) await writeInPieces(text, request.onText, request.signal);
+      return { text, inputTokens: 500, outputTokens: 1_500 };
     },
   };
 }

@@ -36,10 +36,15 @@ const runsOf = (words: readonly string[]): Set<string> => {
   return runs;
 };
 
+/** The runs of words in `instructions` that a reply must not repeat, worked out once for a reply that is checked many times. */
+export const instructionRuns = (instructions: string): ReadonlySet<string> => runsOf(wordsOf(instructions));
+
+/** Whether `reply` repeats any of the runs `given`, whatever its capitals and punctuation. */
+export const repeatsRuns = (reply: string, given: ReadonlySet<string>): boolean => [...runsOf(wordsOf(reply))].some((run) => given.has(run));
+
 /** Whether `reply` repeats a run of words from `instructions`, whatever its capitals and punctuation (REQ-TRV-040). */
 export function revealsInstructions(reply: string, instructions: string): boolean {
-  const given = runsOf(wordsOf(instructions));
-  return [...runsOf(wordsOf(reply))].some((run) => given.has(run));
+  return repeatsRuns(reply, instructionRuns(instructions));
 }
 
 /** Every piece of text in a reply, whether it is said to the Traveler or written into an Activity they would see. */

@@ -6,6 +6,12 @@ export interface AiDouble extends AiService {
   readonly requests: readonly AiRequest[];
   /** The next requests are answered with this text, or with whatever the function returns. */
   replyWith(reply: string | ((request: AiRequest) => string)): void;
+  /**
+   * The next requests are answered as a provider that streams would: `script` is given a function that hands the caller
+   * a piece of the reply as it is written, and returns the whole reply when it is done. It decides when each piece is
+   * given, so a test can hold the reply half written.
+   */
+  replyWithStream(script: (emit: (delta: string) => void, request: AiRequest) => Promise<string>): void;
   failWith(error?: Error): void;
   /** The next requests never get an answer, until the caller's signal aborts. */
   neverAnswer(): void;
@@ -28,6 +34,9 @@ export function anAiDouble(): AiDouble {
     },
     replyWith(next) {
       behaviour = async (request) => reply(typeof next === 'string' ? next : next(request));
+    },
+    replyWithStream(script) {
+      behaviour = async (request) => reply(await script((delta) => request.onText?.(delta), request));
     },
     failWith(error = new AiUnavailableError()) {
       behaviour = async () => {
