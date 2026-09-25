@@ -1,9 +1,12 @@
-import type { FastifyInstance, FastifyReply } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { AccountService } from '../accounts/account-service';
 import { requireConfirmedEmail, requireTraveler } from '../accounts/require-traveler';
 import type { SessionService } from '../accounts/session-service';
 import { parseBody } from '../http/validation';
-import { tripInputSchema, tripUpdateSchema } from '../../shared/trip-schemas';
+import { PLAN_CHANGE_NEEDS_CONFIRMATION, type WarnedPlanEffect } from '../../shared/plan-schemas';
+import { tripChangeRequestSchema, tripInputSchema } from '../../shared/trip-schemas';
+import { replyToRefusal } from '../plans/plan-refusals';
+import type { ChangeResult, TripChangeService } from './trip-change-service';
 import type { TripResult, TripService } from './trip-service';
 
 type IdParams = { readonly id: string };
@@ -15,7 +18,12 @@ type IdParams = { readonly id: string };
  */
 export async function tripRoutes(
   app: FastifyInstance,
-  deps: { readonly accounts: AccountService; readonly sessions: SessionService; readonly trips: TripService },
+  deps: {
+    readonly accounts: AccountService;
+    readonly sessions: SessionService;
+    readonly trips: TripService;
+    readonly tripChanges: TripChangeService;
+  },
 ): Promise<void> {
   const { trips } = deps;
   const loggedIn = requireTraveler(deps.sessions);
@@ -36,9 +44,11 @@ export async function tripRoutes(
   });
 
   app.patch<{ Params: IdParams }>('/api/trips/:id', { preHandler: loggedIn }, async (request, reply) => {
-    const body = await parseBody(tripUpdateSchema, request.body, reply);
+    const body = await parseBody(tripChangeRequestSchema, request.body, reply);
     if (!body.ok) return;
-    return replyWith(reply, trips.update(ownerOf(request), request.params.id, body.value), 200);
+    const { confirmPlanChange, ...change } = body.value;
+    const result = await deps.tripChanges.change(ownerOf(request), request.params.id, change, { confirmPlanChange });
+    return replyToChange(request, reply, result);
   });
 
   app.delete<{ Params: IdParams }>('/api/trips/:id', { preHandler: loggedIn }, async (request, reply) =>
@@ -48,6 +58,23 @@ export async function tripRoutes(
 
 function tripNotFound(reply: FastifyReply) {
   return reply.code(404).send({ code: 'TRIP_NOT_FOUND', message: 'Trip not found.' });
+}
+
+function planChangeMessage(effect: WarnedPlanEffect): string {
+  return effect.kind === 'regenerate'
+    ? "Changing the Destination replaces this Trip's Plan with a new one. Your current Plan stays as an earlier version you can restore."
+    : `Shortening the Trip drops ${effect.droppedDays.length === 1 ? 'Day' : 'Days'} ${effect.droppedDays.join(', ')} from its Plan. Your current Plan stays as an earlier version you can restore.`;
+}
+
+function replyToChange(request: FastifyRequest, reply: FastifyReply, result: ChangeResult) {
+  if (result.ok) return reply.code(200).send(result.trip);
+  if (result.error === 'invalid') return replyWith(reply, result, 200);
+  if (result.error === 'needs-confirmation') {
+    return reply
+      .code(409)
+      .send({ code: PLAN_CHANGE_NEEDS_CONFIRMATION, message: planChangeMessage(result.effect), effect: result.effect });
+  }
+  return replyToRefusal(request, reply, result, 'Trip change');
 }
 
 function replyWith(reply: FastifyReply, result: TripResult, successStatus: number) {

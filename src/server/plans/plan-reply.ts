@@ -1,5 +1,8 @@
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { Currency } from '../../shared/currencies';
+import { dateOfTripDay } from '../../shared/trip-schemas';
+import type { NewActivity } from './plan-edit';
 import { ACTIVITY_CATEGORIES, type PlanActivity, type PlanDay, type PlanView } from '../../shared/plan-schemas';
 
 export type PlanReplyProblem = 'not-json' | 'invalid' | 'wrong-days';
@@ -12,6 +15,9 @@ export interface PlanReplyTrip {
   readonly startDate: string;
   readonly dayCount: number;
   readonly currency: Currency;
+  readonly adults: number;
+  readonly children: number;
+  readonly budget: number;
 }
 
 const text = (max: number) => z.string().trim().min(1).max(max);
@@ -38,12 +44,6 @@ const replySchema = z.object({
   }),
 });
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-function dateOfDay(startDate: string, dayNumber: number): string {
-  return new Date(Date.parse(startDate) + (dayNumber - 1) * DAY_MS).toISOString().slice(0, 10);
-}
-
 /** The JSON object in a reply, allowing for a code fence or a sentence around it. */
 function jsonIn(reply: string): unknown {
   const start = reply.indexOf('{');
@@ -57,6 +57,21 @@ function jsonIn(reply: string): unknown {
 }
 
 const byStartTime = (a: PlanActivity, b: PlanActivity) => a.startTime.localeCompare(b.startTime);
+
+type ReplyActivity = z.output<typeof activitySchema>;
+
+/** The server, never the AI, decides an Activity's id and that no Traveler has touched it yet. */
+const asPlanActivity = (activity: ReplyActivity): PlanActivity => ({
+  id: randomUUID(),
+  title: activity.title,
+  startTime: activity.startTime,
+  durationMinutes: activity.durationMinutes,
+  estimatedCost: activity.estimatedCost,
+  location: activity.location,
+  reason: activity.reason,
+  category: activity.category,
+  changedByHand: false,
+});
 
 /**
  * Turns an AI reply into a Plan. The reply is untrusted: anything that is not exactly one Day per
@@ -77,8 +92,48 @@ export function parsePlanReply(reply: string, trip: PlanReplyTrip): PlanReplyRes
     .sort((a, b) => a.dayNumber - b.dayNumber)
     .map((day) => ({
       dayNumber: day.dayNumber,
-      date: dateOfDay(trip.startDate, day.dayNumber),
-      activities: [...day.activities].sort(byStartTime),
+      date: dateOfTripDay(trip.startDate, day.dayNumber),
+      activities: day.activities.map(asPlanActivity).sort(byStartTime),
     }));
-  return { ok: true, plan: { currency: trip.currency, days, stay: parsed.data.stay } };
+  return {
+    ok: true,
+    plan: {
+      currency: trip.currency,
+      days,
+      stay: parsed.data.stay,
+      basis: { adults: trip.adults, children: trip.children, budget: trip.budget },
+    },
+  };
+}
+
+export type DayReplyResult =
+  | { readonly ok: true; readonly activities: readonly PlanActivity[] }
+  | { readonly ok: false; readonly problem: 'not-json' | 'invalid' | 'wrong-day' };
+
+const dayReplySchema = z.object({ dayNumber: z.number().int().min(1), activities: z.array(activitySchema).min(1) });
+
+/** One regenerated Day. Refused, never repaired, when it is for another Day or holds no Activity. */
+export function parseDayReply(reply: string, dayNumber: number): DayReplyResult {
+  const raw = jsonIn(reply);
+  if (raw === undefined) return { ok: false, problem: 'not-json' };
+  const parsed = dayReplySchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, problem: 'invalid' };
+  if (parsed.data.dayNumber !== dayNumber) return { ok: false, problem: 'wrong-day' };
+  return { ok: true, activities: parsed.data.activities.map(asPlanActivity).sort(byStartTime) };
+}
+
+export type ActivityReplyResult =
+  | { readonly ok: true; readonly activity: NewActivity }
+  | { readonly ok: false; readonly problem: 'not-json' | 'invalid' };
+
+const activityReplySchema = z.object({ activity: activitySchema });
+
+/** One suggested replacement Activity, as the fields the Traveler can accept it with. */
+export function parseActivityReply(reply: string): ActivityReplyResult {
+  const raw = jsonIn(reply);
+  if (raw === undefined) return { ok: false, problem: 'not-json' };
+  const parsed = activityReplySchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, problem: 'invalid' };
+  const { title, startTime, durationMinutes, estimatedCost, location, reason, category } = parsed.data.activity;
+  return { ok: true, activity: { title, startTime, durationMinutes, estimatedCost, location, reason, category } };
 }

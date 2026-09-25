@@ -32,6 +32,22 @@ export interface PlanStore {
 }
 
 type VersionRow = typeof planVersions.$inferSelect;
+type StoredPlan = ReturnType<typeof planViewSchema.parse>;
+
+/**
+ * A Plan saved before Activities had ids gets one by position when it is read, the same every time, so
+ * an edit can name it. Once the Plan is next saved the id is stored and stops depending on position.
+ */
+function withIds(stored: StoredPlan): PlanView {
+  const days = stored.days.map((day) => ({
+    ...day,
+    activities: day.activities.map((activity, index) => ({
+      ...activity,
+      id: activity.id ?? `day-${day.dayNumber}-activity-${index + 1}`,
+    })),
+  }));
+  return { currency: stored.currency, days, stay: stored.stay, ...(stored.basis ? { basis: stored.basis } : {}) };
+}
 
 /** A stored snapshot is data read back from disk, so it is checked, never trusted. */
 function savedPlanOf(row: VersionRow): SavedPlan {
@@ -45,7 +61,7 @@ function savedPlanOf(row: VersionRow): SavedPlan {
   if (!parsed.success) {
     throw new Error(`The stored Plan for Trip ${row.tripId}, version ${row.versionNumber}, is not a valid Plan.`);
   }
-  return { ...parsed.data, version: row.versionNumber, createdAt: row.createdAt.toISOString(), source: row.source };
+  return { ...withIds(parsed.data), version: row.versionNumber, createdAt: row.createdAt.toISOString(), source: row.source };
 }
 
 export function createPlanStore(deps: { readonly db: TrvDatabase; readonly clock: Clock }): PlanStore {
@@ -61,7 +77,12 @@ export function createPlanStore(deps: { readonly db: TrvDatabase; readonly clock
   const write = (tx: Executor, tripId: string, plan: PlanView, source: PlanVersionSource): SavedPlan => {
     const now = clock.now();
     const version = newestVersion(tx, tripId) + 1;
-    const snapshot: PlanView = { currency: plan.currency, days: plan.days, stay: plan.stay };
+    const snapshot: PlanView = {
+      currency: plan.currency,
+      days: plan.days,
+      stay: plan.stay,
+      ...(plan.basis ? { basis: plan.basis } : {}),
+    };
     tx.insert(planVersions)
       .values({ id: randomUUID(), tripId, versionNumber: version, source, planJson: JSON.stringify(snapshot), createdAt: now })
       .run();

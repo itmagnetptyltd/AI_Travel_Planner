@@ -62,7 +62,7 @@ export function TripPage() {
         <dd>{shown.status}</dd>
       </dl>
       <PreferenceSummary trip={shown} />
-      <PlanGenerator key={shown.id} tripId={shown.id} onPlanSaved={reloadTrip} />
+      <PlanGenerator key={shown.id} trip={shown} onPlanSaved={reloadTrip} />
       <Link to={`/trips/${encodeURIComponent(shown.id)}/edit`}>Edit</Link>
       {isConfirmingDelete ? (
         <div role="group" aria-label="Confirm delete">

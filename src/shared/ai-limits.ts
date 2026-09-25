@@ -7,7 +7,7 @@ export const MAX_DAILY_PLAN_GENERATION_LIMIT = 1000;
 /** ANSWERS.md, "Storing AI requests and replies": text is deleted after 30 days; counts and cost stay. */
 export const AI_TEXT_RETENTION_DAYS = 30;
 
-export const AI_REQUEST_KINDS = ['plan-generation'] as const;
+export const AI_REQUEST_KINDS = ['plan-generation', 'day-regeneration', 'activity-suggestion'] as const;
 export type AiRequestKind = (typeof AI_REQUEST_KINDS)[number];
 
 /** What an Administrator sends to change the limits (REQ-TRV-091). The chat limit arrives with chat, in slice 8. */

@@ -36,6 +36,11 @@ export function tripDayCount(startDate: string, endDate: string): number {
   return Math.round((Date.parse(endDate) - Date.parse(startDate)) / DAY_MS) + 1;
 }
 
+/** The calendar date of a Trip's Day (Day 1 is the start date). */
+export function dateOfTripDay(startDate: string, dayNumber: number): string {
+  return new Date(Date.parse(startDate) + (dayNumber - 1) * DAY_MS).toISOString().slice(0, 10);
+}
+
 /** Whether a start and end date make a Trip; a problem is always reported on the end date. */
 export function areTripDatesValid(startDate: string, endDate: string): boolean {
   const days = tripDayCount(startDate, endDate);
@@ -72,6 +77,12 @@ export const tripInputSchema = z
 
 /** Any subset of the Trip details. The dates are checked against the saved Trip by the service. */
 export const tripUpdateSchema = z.object(tripFields).partial().strict();
+
+/**
+ * A change to a Trip as the Web API takes it. `confirmPlanChange` says the Traveler has been told what the
+ * change does to the Trip's Plan, and agrees; without it a change that would alter the Plan is not made.
+ */
+export const tripChangeRequestSchema = z.object({ ...tripFields, confirmPlanChange: z.boolean() }).partial().strict();
 
 export type TripInput = z.input<typeof tripInputSchema>;
 export type TripUpdate = z.input<typeof tripUpdateSchema>;

@@ -1209,7 +1209,14 @@
   title: A Traveler can regenerate the whole Plan of a Trip
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/edit-regenerate.spec.ts
+    - tests/api/plan-regeneration.http.spec.ts
+    - tests/unit/plan-edit.test.ts
+    - tests/unit/plan-regeneration-service.test.ts
+    - tests/unit/plan-store.test.ts
+    - tests/unit/plan-view-state.test.ts
   version: 1
   source: BRD v1.0 §10 ("regenerate a complete itinerary"); §13; §30 FR-06; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -1243,7 +1250,16 @@
   title: A Traveler can regenerate a single Day while every other Day stays unchanged
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/edit-regenerate.spec.ts
+    - tests/api/plan-regeneration.http.spec.ts
+    - tests/unit/plan-edit.test.ts
+    - tests/unit/plan-prompt.test.ts
+    - tests/unit/plan-regeneration-service.test.ts
+    - tests/unit/plan-reply.test.ts
+    - tests/unit/plan-view-state.test.ts
+    - tests/unit/scripted-ai-service.test.ts
   version: 1
   source: BRD v1.0 §10 ("or a specific day/section"; "Small changes should not require unnecessary regeneration"); §30 FR-06; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -1273,7 +1289,11 @@
   title: Regeneration gives the AI the Trip's currently selected travel preferences
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - tests/api/plan-regeneration.http.spec.ts
+    - tests/unit/plan-prompt.test.ts
+    - tests/unit/plan-regeneration-service.test.ts
   version: 1
   source: BRD v1.0 §10 ("retain the user's selected preferences when regenerating"); §30 FR-06
   acceptance:
@@ -1307,7 +1327,16 @@
   title: A Traveler can edit an Activity in the Plan
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/edit-regenerate.spec.ts
+    - tests/api/plan-editing.http.spec.ts
+    - tests/unit/activity-form-state.test.ts
+    - tests/unit/plan-edit.test.ts
+    - tests/unit/plan-editor-service.test.ts
+    - tests/unit/plan-reply.test.ts
+    - tests/unit/plan-store.test.ts
+    - tests/unit/plan-view-state.test.ts
   version: 1
   source: BRD v1.0 §12 ("edit"); §8 ("The generated plan should be editable"); §30 FR-06
   acceptance:
@@ -1321,7 +1350,12 @@
   title: A Traveler can remove an Activity from the Plan
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/edit-regenerate.spec.ts
+    - tests/api/plan-editing.http.spec.ts
+    - tests/unit/plan-edit.test.ts
+    - tests/unit/plan-editor-service.test.ts
   version: 1
   source: BRD v1.0 §12 ("remove"); §30 FR-06
   acceptance:
@@ -1335,7 +1369,18 @@
   title: A Traveler can replace an Activity in the Plan with a different Activity
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/edit-regenerate.spec.ts
+    - tests/api/plan-editing.http.spec.ts
+    - tests/api/plan-regeneration.http.spec.ts
+    - tests/unit/activity-form-state.test.ts
+    - tests/unit/plan-edit.test.ts
+    - tests/unit/plan-editor-service.test.ts
+    - tests/unit/plan-prompt.test.ts
+    - tests/unit/plan-regeneration-service.test.ts
+    - tests/unit/plan-reply.test.ts
+    - tests/unit/scripted-ai-service.test.ts
   version: 1
   source: BRD v1.0 §12 ("replace"); §26 ("Replace expensive restaurants with budget options"); §30 FR-06; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -1368,7 +1413,12 @@
   title: A Traveler can move an Activity to another Day of the same Trip
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/edit-regenerate.spec.ts
+    - tests/api/plan-editing.http.spec.ts
+    - tests/unit/plan-edit.test.ts
+    - tests/unit/plan-editor-service.test.ts
   version: 1
   source: BRD v1.0 §12 ("move-to-another-day"); §30 FR-06; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -2504,7 +2554,11 @@
   title: A saved Trip keeps working after its Destination is disabled
   module: TRV
   priority: should
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/edit-regenerate.spec.ts
+    - tests/api/plan-regeneration.http.spec.ts
+    - tests/unit/plan-regeneration-service.test.ts
   version: 1
   source: CHG-0001; moved from REQ-TRV-074 v1 (BRD v1.0 §19; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0001 by developer confirmation 2026-09-24
   acceptance:
@@ -2584,7 +2638,16 @@
   title: Changing a saved Trip's Destination, dates, travelers or budget treats its Plan as agreed
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/edit-regenerate.spec.ts
+    - tests/api/trip-plan-change.http.spec.ts
+    - tests/unit/plan-edit.test.ts
+    - tests/unit/plan-reply.test.ts
+    - tests/unit/plan-store.test.ts
+    - tests/unit/plan-view-state.test.ts
+    - tests/unit/trip-change-service.test.ts
+    - tests/unit/trip-form-state.test.ts
   version: 1
   source: CHG-0002; moved from REQ-TRV-014 v1 (BRD v1.0 §13; §30 FR-02; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0002 by developer confirmation 2026-09-25
   acceptance:
@@ -2686,7 +2749,13 @@
   title: When the AI fails while regenerating, the Trip's saved Plan stays displayed
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/edit-regenerate.spec.ts
+    - tests/api/plan-regeneration.http.spec.ts
+    - tests/unit/plan-regeneration-service.test.ts
+    - tests/unit/plan-view-state.test.ts
+    - tests/unit/scripted-ai-service.test.ts
   version: 1
   source: CHG-0003; moved from REQ-TRV-029 v1 (BRD v1.0 §29 ("AI failures should have a clear fallback message"); §30 FR-04; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0003 by developer confirmation 2026-09-25
   acceptance:
@@ -2700,7 +2769,11 @@
   title: Editing, removing and moving Activities keep working while the AI is unavailable
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/edit-regenerate.spec.ts
+    - tests/api/plan-editing.http.spec.ts
+    - tests/unit/plan-editor-service.test.ts
   version: 1
   source: CHG-0003; moved from REQ-TRV-030 v1 (BRD v1.0 §29 ("rather than blocking the entire application"); clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0003 by developer confirmation 2026-09-25
   acceptance:

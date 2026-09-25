@@ -25,9 +25,13 @@ interface TripFormProps {
   readonly dispatch: Dispatch<TripFormAction>;
   readonly submitLabel: string;
   readonly onSubmit: () => void;
+  /** True while a save is under way, which can take up to two minutes when it rewrites the Trip's Plan. */
+  readonly isSaving?: boolean;
+  /** The Traveler agrees to what a change does to the Plan. */
+  readonly onConfirmPlanChange?: () => void;
 }
 
-export function TripForm({ state, dispatch, submitLabel, onSubmit }: TripFormProps) {
+export function TripForm({ state, dispatch, submitLabel, onSubmit, isSaving = false, onConfirmPlanChange }: TripFormProps) {
   const { values, outcome } = state;
   const errorFor = (serverField: string) =>
     outcome.kind === 'failed' && outcome.field === serverField ? outcome.message : undefined;
@@ -109,9 +113,23 @@ export function TripForm({ state, dispatch, submitLabel, onSubmit }: TripFormPro
         ))}
         {errorFor('accommodation') ? <p className="field-error">{errorFor('accommodation')}</p> : null}
       </fieldset>
-      <button type="submit">{submitLabel}</button>
-      {outcome.kind === 'saved' ? <p role="status">{outcome.message}</p> : null}
+      <button type="submit" disabled={isSaving}>
+        {submitLabel}
+      </button>
+      {isSaving ? <p role="status">Saving your changes… this can take up to two minutes if the Plan is rewritten.</p> : null}
+      {outcome.kind === 'saved' && !isSaving ? <p role="status">{outcome.message}</p> : null}
       {outcome.kind === 'failed' ? <p role="alert">{outcome.message}</p> : null}
+      {outcome.kind === 'needs-confirmation' && onConfirmPlanChange ? (
+        <div role="group" aria-label="Confirm change to the Plan" className="plan-notice">
+          <p>{outcome.message}</p>
+          <button type="button" disabled={isSaving} onClick={onConfirmPlanChange}>
+            Change the Trip and its Plan
+          </button>
+          <button type="button" onClick={() => dispatch({ type: 'dismissed' })}>
+            Cancel
+          </button>
+        </div>
+      ) : null}
     </form>
   );
 }
