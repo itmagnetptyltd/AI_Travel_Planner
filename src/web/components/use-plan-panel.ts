@@ -8,12 +8,6 @@ import type { PlanActions, SuggestedActivity } from './plan-actions';
 /** Requests that ask the AI or take a while, and so say what they are doing. Changes by hand are quick and say nothing. */
 export type PlanBusyKind = 'generating' | 'regenerating-day' | 'restoring';
 
-export const BUSY_MESSAGES: Readonly<Record<PlanBusyKind, string>> = {
-  generating: 'Generating your Plan… this can take up to two minutes.',
-  'regenerating-day': 'Generating that Day… this can take up to two minutes.',
-  restoring: 'Restoring that version…',
-};
-
 /** A request held back until the Traveler agrees to lose the Activities they changed. */
 export interface PendingConfirmation {
   readonly message: string;

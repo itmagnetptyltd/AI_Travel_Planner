@@ -7,17 +7,28 @@ import type { SavedPlan } from '../../shared/plan-schemas';
 import { createAiCaller, type AiCaller, type AiUnavailable, type LimitReached } from '../plans/ai-call';
 import type { AiUsageLimitService } from '../plans/ai-usage-limit-service';
 import { promptInputForTrip } from '../plans/plan-request-context';
+import type { PlanPrompt } from '../plans/plan-prompt';
 import type { PlanGenerationSettings } from '../plans/plan-service';
 import type { PlanStore } from '../plans/plan-store';
 import { applyProposal, buildProposal, estimatedTotalsOf } from './chat-proposal';
 import { buildChatPrompt } from './chat-prompt';
 import { parseChatReply } from './chat-reply';
+import { createReplyStreamer } from './chat-reply-stream';
 import type { ChatStore } from './chat-store';
 
 export type SendResult =
   | { readonly ok: true; readonly messages: readonly [ChatMessage, ChatMessage] }
   | { readonly ok: false; readonly error: 'not-found' | 'no-plan' }
   | AiUnavailable
+  | LimitReached;
+
+/**
+ * A message that has been checked and counted against the day's limit, and is ready to be asked of the AI. Refusals come here,
+ * before anything is asked, so a caller can answer them as ordinary errors before it starts to stream.
+ */
+export type StartResult =
+  | { readonly ok: true; readonly run: (onText?: (text: string) => void) => Promise<SendResult> }
+  | { readonly ok: false; readonly error: 'not-found' | 'no-plan' }
   | LimitReached;
 
 export type ListResult = { readonly ok: true; readonly messages: readonly ChatMessage[] } | { readonly ok: false; readonly error: 'not-found' };
@@ -33,6 +44,8 @@ export type RejectResult = { readonly ok: true; readonly message: ChatMessage } 
 /** A Trip's chat: questions answered, and changes to the Plan proposed for the Traveler to accept or reject. */
 export interface ChatService {
   send(ownerId: string, tripId: string, message: string): Promise<SendResult>;
+  /** The same as `send` in two steps: refuse or count the message now, and ask the AI in `run`, handing over the reply's text as it is written. */
+  start(ownerId: string, tripId: string, message: string): StartResult;
   list(ownerId: string, tripId: string): ListResult;
   /** Puts a proposed change on the Plan as a new version. Only while the Plan is still the one it was made for. */
   accept(ownerId: string, tripId: string, messageId: string): AcceptResult;
@@ -66,36 +79,61 @@ export function createChatService(deps: {
     return { ok: true, proposal: message.proposal } as const;
   };
 
+  /** Asks the AI for the reply to a message already counted, and saves the exchange. With `onText`, the reply's text is given as it is written. */
+  async function answer(
+    job: { readonly ownerId: string; readonly tripId: string; readonly text: string; readonly plan: SavedPlan; readonly prompt: PlanPrompt; readonly recordId: string },
+    onText?: (text: string) => void,
+  ): Promise<SendResult> {
+    const { ownerId, tripId, text, plan, prompt, recordId } = job;
+    let isListening = onText !== undefined;
+    const streamer = createReplyStreamer(prompt.system);
+    const pieces = onText
+      ? (delta: string) => {
+          const shown = isListening ? streamer.push(delta) : '';
+          if (shown !== '') onText(shown);
+        }
+      : undefined;
+    const answered = await caller.ask(recordId, prompt, pieces ? { onText: pieces } : {});
+    isListening = false;
+    if ('refusal' in answered) return answered.refusal;
+
+    const reply = parseChatReply(answered.reply.text, { instructions: prompt.system });
+    if (!reply.ok) return unusable(recordId, answered.reply, reply.problem);
+    const proposed = buildProposal(plan, reply.changes);
+    if (!proposed.ok) return unusable(recordId, answered.reply, proposed.error);
+
+    const proposal =
+      proposed.days.length > 0
+        ? { basePlanVersion: plan.version, days: proposed.days, estimatedTotal: estimatedTotalsOf(plan, proposed.days) }
+        : undefined;
+    return caller.saveWithin(recordId, answered.reply, (tx): SendResult => {
+      if (!trips.getForOwner(ownerId, tripId)) return { ok: false, error: 'not-found' };
+      const entry = { role: 'assistant', text: reply.reply, ...(proposal ? { proposal } : {}) } as const;
+      return { ok: true, messages: chat.appendExchange(tripId, { role: 'traveler', text }, entry, tx) };
+    });
+  }
+
+  const start: ChatService['start'] = (ownerId, tripId, text) => {
+    const trip = trips.getForOwner(ownerId, tripId);
+    const input = trip ? promptInputForTrip(db, trip, settings.destinationTextMaxChars) : null;
+    if (!trip || !input) return { ok: false, error: 'not-found' };
+    const plan = store.current(tripId);
+    if (!plan) return { ok: false, error: 'no-plan' };
+
+    const history = chat.recent(tripId, CHAT_CONTEXT_MESSAGES).map(({ role, text: said }) => ({ role, text: said }));
+    const prompt = buildChatPrompt({ trip: input, plan, history, message: text });
+    const reservation = caller.reserve('chat', ownerId, tripId, requestTextOf(prompt));
+    if (!reservation.ok) return reservation;
+    return { ok: true, run: (onText) => answer({ ownerId, tripId, text, plan, prompt, recordId: reservation.recordId }, onText) };
+  };
+
   return {
     async send(ownerId, tripId, text) {
-      const trip = trips.getForOwner(ownerId, tripId);
-      const input = trip ? promptInputForTrip(db, trip, settings.destinationTextMaxChars) : null;
-      if (!trip || !input) return { ok: false, error: 'not-found' };
-      const plan = store.current(tripId);
-      if (!plan) return { ok: false, error: 'no-plan' };
-
-      const history = chat.recent(tripId, CHAT_CONTEXT_MESSAGES).map(({ role, text: said }) => ({ role, text: said }));
-      const prompt = buildChatPrompt({ trip: input, plan, history, message: text });
-      const reservation = caller.reserve('chat', ownerId, tripId, requestTextOf(prompt));
-      if (!reservation.ok) return reservation;
-      const answer = await caller.ask(reservation.recordId, prompt);
-      if ('refusal' in answer) return answer.refusal;
-
-      const reply = parseChatReply(answer.reply.text, { instructions: prompt.system });
-      if (!reply.ok) return unusable(reservation.recordId, answer.reply, reply.problem);
-      const proposed = buildProposal(plan, reply.changes);
-      if (!proposed.ok) return unusable(reservation.recordId, answer.reply, proposed.error);
-
-      const proposal =
-        proposed.days.length > 0
-          ? { basePlanVersion: plan.version, days: proposed.days, estimatedTotal: estimatedTotalsOf(plan, proposed.days) }
-          : undefined;
-      return caller.saveWithin(reservation.recordId, answer.reply, (tx): SendResult => {
-        if (!trips.getForOwner(ownerId, tripId)) return { ok: false, error: 'not-found' };
-        const entry = { role: 'assistant', text: reply.reply, ...(proposal ? { proposal } : {}) } as const;
-        return { ok: true, messages: chat.appendExchange(tripId, { role: 'traveler', text }, entry, tx) };
-      });
+      const started = start(ownerId, tripId, text);
+      return started.ok ? started.run() : started;
     },
+
+    start,
 
     list(ownerId, tripId) {
       return trips.getForOwner(ownerId, tripId) ? { ok: true, messages: chat.list(tripId) } : { ok: false, error: 'not-found' };

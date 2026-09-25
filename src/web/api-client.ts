@@ -25,14 +25,15 @@ export async function api<T>(method: string, path: string, body?: unknown): Prom
     if (response.ok) {
       return { ok: true, status: response.status, data: payload as T };
     }
-    return { ok: false, status: response.status, error: toApiError(payload) };
+    return { ok: false, status: response.status, error: apiErrorFrom(payload) };
   } catch {
     // A failed fetch is reported to the caller as a result, not rethrown.
     return { ok: false, status: 0, error: NETWORK_ERROR };
   }
 }
 
-function toApiError(payload: unknown): ApiError {
+/** The error an error response carries, or a plain one when what came back is not one. */
+export function apiErrorFrom(payload: unknown): ApiError {
   if (typeof payload === 'object' && payload !== null && 'code' in payload) {
     const details = payload as Record<string, unknown>;
     const { code, message, field } = details;

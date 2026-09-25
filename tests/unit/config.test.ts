@@ -36,6 +36,13 @@ function problemsWith(env: Record<string, string>): string {
   return '';
 }
 
+describe('how long the application waits for the AI', () => {
+  // @covers REQ-TRV-080@v1
+  test('is 120 seconds unless it is set otherwise, the time after which the fallback message is shown', () => {
+    expect(loadConfig(ANTHROPIC).AI_TIMEOUT_MS).toBe(120_000);
+  });
+});
+
 describe('the AI settings at startup', () => {
   // @covers REQ-TRV-026@v1
   test('reads the provider, key, model, cost rates and the limits the client asked to be configurable', () => {

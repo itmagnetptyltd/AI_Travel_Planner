@@ -8,7 +8,8 @@ import { FeedbackPanel } from './FeedbackPanel';
 import { PlanDisplay } from './PlanDisplay';
 import { PlanVersions } from './PlanVersions';
 import { SharePanel } from './SharePanel';
-import { BUSY_MESSAGES, usePlanPanel } from './use-plan-panel';
+import { busyText, isSlowRequest, useElapsedMs } from './plan-progress';
+import { usePlanPanel } from './use-plan-panel';
 
 /**
  * A Trip's Plan section. It shows the saved Plan as soon as the page opens, and asks the AI for a new one
@@ -22,6 +23,7 @@ export function PlanGenerator({ trip, onPlanSaved }: { readonly trip: TripView; 
     onPlanSaved,
   );
   const [isChatBusy, setIsChatBusy] = useState(false);
+  const elapsedMs = useElapsedMs(busy !== null);
   const banner = panel.plan ? planBanner(panel.plan, trip) : null;
   // Asking the chat, or deciding on what it suggested, and changing the Plan another way, never happen at once.
   const planActions = { ...actions, isBusy: actions.isBusy || isChatBusy };
@@ -31,7 +33,8 @@ export function PlanGenerator({ trip, onPlanSaved }: { readonly trip: TripView; 
       <button type="button" disabled={planActions.isBusy} onClick={regeneratePlan}>
         {planButtonLabel(panel.plan !== null)}
       </button>
-      {busy ? <p role="status">{BUSY_MESSAGES[busy]}</p> : null}
+      {busy ? <p role="status">{busyText(busy, elapsedMs)}</p> : null}
+      {busy && isSlowRequest(busy) ? <progress aria-label="Progress of the AI request" /> : null}
       {panel.notice ? <p role="alert">{panel.notice.message}</p> : null}
       {loadFailure ? <p role="alert">{loadFailure}</p> : null}
       {pending ? <ConfirmRegeneration message={pending.message} isBusy={planActions.isBusy} onConfirm={() => void pending.run()} onCancel={cancelPending} /> : null}

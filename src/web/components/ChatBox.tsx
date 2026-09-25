@@ -57,6 +57,18 @@ export function ChatBox({ tripId, planVersion, currency, isBusy, onBusyChange, o
           ))}
         </ul>
       ) : null}
+      {chat.arriving ? (
+        <ul aria-label="Reply arriving">
+          <li>
+            <strong>{roleLabel('traveler')}</strong> <span className="chat-text">{chat.arriving.question}</span>
+          </li>
+          {chat.arriving.reply !== '' ? (
+            <li>
+              <strong>{roleLabel('assistant')}</strong> <span className="chat-text">{chat.arriving.reply}</span>
+            </li>
+          ) : null}
+        </ul>
+      ) : null}
       <form onSubmit={submit} noValidate>
         <div className="field">
           <label htmlFor="chat-message">Message</label>

@@ -7,10 +7,17 @@ interface ProviderMessage {
   readonly usage: { readonly input_tokens: number; readonly output_tokens: number };
 }
 
-/** The one call this adapter makes, so a test can supply it without touching the network. */
+/** A reply being written: it says each piece of text as it arrives, and gives the whole message when it is finished. */
+interface ProviderStream {
+  on(event: 'text', listener: (delta: string) => void): unknown;
+  finalMessage(): Promise<ProviderMessage>;
+}
+
+/** The calls this adapter makes, so a test can supply them without touching the network. Without `stream`, nothing is streamed. */
 export interface AnthropicMessagesClient {
   readonly messages: {
     create(params: Anthropic.MessageCreateParamsNonStreaming, options?: { signal?: AbortSignal }): Promise<ProviderMessage>;
+    stream?(params: Anthropic.MessageCreateParamsNonStreaming, options?: { signal?: AbortSignal }): ProviderStream;
   };
 }
 
@@ -25,7 +32,12 @@ const UNUSABLE_STOP_REASONS = ['max_tokens', 'refusal'];
 
 function realClient(apiKey: string): AnthropicMessagesClient {
   const client = new Anthropic({ apiKey });
-  return { messages: { create: (params, options) => client.messages.create(params, options) } };
+  return {
+    messages: {
+      create: (params, options) => client.messages.create(params, options),
+      stream: (params, options) => client.messages.stream(params, options),
+    },
+  };
 }
 
 /** What is safe to say about a failure: the status, never the request, the reply or the key. */
@@ -57,17 +69,20 @@ export function createAnthropicAiService(options: AnthropicAiOptions): AiService
   const client = options.client ?? realClient(options.apiKey);
   return {
     async complete(request): Promise<AiReply> {
+      const params = {
+        model: options.model,
+        max_tokens: request.maxOutputTokens,
+        system: request.system,
+        messages: [{ role: 'user' as const, content: request.user }],
+      };
       try {
-        const message = await client.messages.create(
-          {
-            model: options.model,
-            max_tokens: request.maxOutputTokens,
-            system: request.system,
-            messages: [{ role: 'user', content: request.user }],
-          },
-          { signal: request.signal },
-        );
-        return toReply(message);
+        const { onText } = request;
+        const stream = onText && client.messages.stream ? client.messages.stream(params, { signal: request.signal }) : null;
+        if (stream && onText) {
+          stream.on('text', onText);
+          return toReply(await stream.finalMessage());
+        }
+        return toReply(await client.messages.create(params, { signal: request.signal }));
       } catch (error) {
         throw error instanceof AiUnavailableError ? error : new AiUnavailableError(describeFailure(error));
       }

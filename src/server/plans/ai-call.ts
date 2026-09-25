@@ -47,7 +47,11 @@ export interface AiCaller {
    */
   record(kind: AnalysisKind, administratorId: string, requestText: string): string;
   /** Asks the AI. On any failure the record is settled as failed and the caller gets the refusal to return. */
-  ask(recordId: string, prompt: PlanPrompt): Promise<{ readonly reply: AiReply } | { readonly refusal: AiUnavailable }>;
+  ask(
+    recordId: string,
+    prompt: PlanPrompt,
+    options?: { readonly onText?: (delta: string) => void },
+  ): Promise<{ readonly reply: AiReply } | { readonly refusal: AiUnavailable }>;
   /** Records the reply and its cost on the request, as failed or succeeded. Pass `within` to join a transaction. */
   settle(recordId: string, status: 'succeeded' | 'failed', reply: AiReply, within?: Executor): void;
   /**
@@ -174,9 +178,10 @@ export function createAiCaller(deps: {
       return id;
     },
 
-    async ask(recordId, prompt) {
+    async ask(recordId, prompt, options = {}) {
       try {
-        return { reply: await completeWithin(ai, { ...prompt, maxOutputTokens: settings.maxOutputTokens }, settings.timeoutMs) };
+        const request = { ...prompt, maxOutputTokens: settings.maxOutputTokens, ...(options.onText ? { onText: options.onText } : {}) };
+        return { reply: await completeWithin(ai, request, settings.timeoutMs) };
       } catch (error) {
         db.update(aiRequests).set({ status: 'failed' }).where(eq(aiRequests.id, recordId)).run();
         if (!(error instanceof AiUnavailableError)) throw error;

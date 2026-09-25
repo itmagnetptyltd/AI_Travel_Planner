@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { accounts } from '../../src/server/db/schema';
+import type { PlanGenerationSettings } from '../../src/server/plans/plan-service';
 import type { PlanVersionSummary, SavedPlan } from '../../src/shared/plan-schemas';
 import { logIn, sessionCookieFrom, type TravelerDetails } from './a-traveler';
 import { aConfirmedTraveler } from './an-administrator';
@@ -25,6 +26,9 @@ export async function aTravelerWithATrip(
     readonly logStream?: { write(line: string): void };
     readonly authRateLimitPerMinute?: number;
     readonly emailTimeoutMs?: number;
+    /** A folder holding a built web app to serve, as the real application does. */
+    readonly webRoot?: string;
+    readonly planSettings?: Partial<PlanGenerationSettings>;
   } = {},
 ): Promise<TravelerWithTrip> {
   const testApp = await buildTestApp({
@@ -33,6 +37,8 @@ export async function aTravelerWithATrip(
     ...(options.authRateLimitPerMinute === undefined ? {} : { authRateLimitPerMinute: options.authRateLimitPerMinute }),
     ...(options.emailTimeoutMs === undefined ? {} : { emailTimeoutMs: options.emailTimeoutMs }),
     ...(options.databasePath === undefined ? {} : { databasePath: options.databasePath }),
+    ...(options.webRoot === undefined ? {} : { webRoot: options.webRoot }),
+    ...(options.planSettings === undefined ? {} : { planSettings: options.planSettings }),
   });
   const destinationId = await anAddedDestination(testApp, { name: 'Kyoto', country: 'Japan' });
   const traveler = await aConfirmedTraveler(testApp.app, testApp.email, { email: TRAVELER_EMAIL });
