@@ -2561,7 +2561,11 @@
   title: Live weather integration is not part of this build
   module: TRV
   priority: wont
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/out-of-scope.spec.ts
+    - tests/unit/out-of-scope-integrations.test.ts
+    - tests/unit/out-of-scope-plan-views.test.ts
   version: 1
   source: BRD v1.0 §28 ("Live weather integration")
   acceptance:
@@ -2574,7 +2578,11 @@
   title: Real-time flight and hotel information is not part of this build
   module: TRV
   priority: wont
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/out-of-scope.spec.ts
+    - tests/unit/out-of-scope-integrations.test.ts
+    - tests/unit/out-of-scope-plan-views.test.ts
   version: 1
   source: BRD v1.0 §28 ("Real-time flight and hotel information")
   acceptance:
@@ -2587,7 +2595,11 @@
   title: Map integration is not part of this build
   module: TRV
   priority: wont
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/out-of-scope.spec.ts
+    - tests/unit/out-of-scope-integrations.test.ts
+    - tests/unit/out-of-scope-plan-views.test.ts
   version: 1
   source: BRD v1.0 §28 ("Map integration")
   acceptance:
@@ -2600,7 +2612,12 @@
   title: Calendar integration is not part of this build
   module: TRV
   priority: wont
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/out-of-scope.spec.ts
+    - tests/unit/out-of-scope-integrations.test.ts
+    - tests/unit/out-of-scope-notifications.test.ts
+    - tests/unit/out-of-scope-plan-views.test.ts
   version: 1
   source: BRD v1.0 §28 ("Calendar integration")
   acceptance:
@@ -2613,7 +2630,11 @@
   title: Multi-language Plan generation is not part of this build
   module: TRV
   priority: wont
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/out-of-scope.spec.ts
+    - tests/unit/out-of-scope-input.test.ts
+    - tests/unit/out-of-scope-integrations.test.ts
   version: 1
   source: BRD v1.0 §28 ("Multi-language itinerary generation")
   acceptance:
@@ -2626,7 +2647,11 @@
   title: A voice-based AI travel assistant is not part of this build
   module: TRV
   priority: wont
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/out-of-scope.spec.ts
+    - tests/unit/out-of-scope-input.test.ts
+    - tests/unit/out-of-scope-integrations.test.ts
   version: 1
   source: BRD v1.0 §28 ("Voice-based AI travel assistant")
   acceptance:
@@ -2639,7 +2664,9 @@
   title: A mobile application is not part of this build
   module: TRV
   priority: wont
-  status: agreed
+  status: verified
+  verified_by:
+    - tests/unit/out-of-scope-integrations.test.ts
   version: 1
   source: BRD v1.0 §28 ("Mobile application")
   acceptance:
@@ -2652,7 +2679,9 @@
   title: AI-based travel risk and disruption notifications are not part of this build
   module: TRV
   priority: wont
-  status: agreed
+  status: verified
+  verified_by:
+    - tests/unit/out-of-scope-notifications.test.ts
   version: 1
   source: BRD v1.0 §28 ("AI-based travel risk and disruption notifications")
   acceptance:
@@ -2665,7 +2694,12 @@
   title: Integration with booking providers is not part of this build
   module: TRV
   priority: wont
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/out-of-scope.spec.ts
+    - tests/unit/out-of-scope-integrations.test.ts
+    - tests/unit/out-of-scope-notifications.test.ts
+    - tests/unit/out-of-scope-plan-views.test.ts
   version: 1
   source: BRD v1.0 §28 ("Integration with booking providers"); §21 ("recommendations rather than confirmed bookings")
   acceptance:
