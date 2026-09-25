@@ -27,6 +27,8 @@ const configSchema = z
     /** The timezone Trip reminders are timed in: 09:00 here, three days before a Trip starts (REQ-TRV-057). */
     APP_TIMEZONE: z.string().min(1).refine(isTimezone, 'must be an IANA timezone such as Australia/Sydney'),
     REMINDER_CHECK_INTERVAL_MS: z.coerce.number().int().positive().max(MAX_TIMER_MS).default(900_000),
+    /** How often Trips deleted 30 days ago are removed for good, taking their Plans and chat with them but not their feedback. */
+    TRIP_PURGE_INTERVAL_MS: z.coerce.number().int().positive().max(MAX_TIMER_MS).default(3_600_000),
     DATABASE_PATH: z.string().min(1),
     EMAIL_TRANSPORT: z.enum(['smtp', 'file']),
     EMAIL_FROM: z.email(),

@@ -36,6 +36,7 @@ export default defineConfig({
       APP_ENV: 'development',
       APP_TIMEZONE: 'UTC',
       REMINDER_CHECK_INTERVAL_MS: '500',
+      TRIP_PURGE_INTERVAL_MS: '500',
       COOKIE_SECURE: 'false',
       NODE_ENV: 'test',
       AI_PROVIDER: 'scripted',

@@ -5,7 +5,7 @@ import { requireTraveler } from '../accounts/require-traveler';
 import type { SessionService } from '../accounts/session-service';
 import type { DestinationService } from '../destinations/destination-service';
 import { parseBody } from '../http/validation';
-import { ADMIN_FUNCTIONS, ROLES } from '../../shared/admin-functions';
+import { ADMIN_FUNCTIONS, roleSchema } from '../../shared/admin-functions';
 import { aiUsageLimitsSchema } from '../../shared/ai-limits';
 import { destinationInputSchema, destinationUpdateSchema } from '../../shared/destination-schemas';
 import type { AiRecordService } from '../plans/ai-record-service';
@@ -13,6 +13,7 @@ import type { AiUsageLimitService } from '../plans/ai-usage-limit-service';
 import { notificationSettingsSchema } from '../../shared/notification-schemas';
 import type { NotificationSettingsService } from '../notifications/notification-settings';
 import { accountActions, type AdminAccountService } from './admin-account-service';
+import { registerReportRoutes, type AdminReportDeps } from './admin-report-routes';
 import { requireAdministrator } from './require-administrator';
 
 const ADMIN_ROUTE_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
@@ -25,7 +26,7 @@ export interface AdminRoute {
 const isAdminRouteMethod = (method: string): method is AdminRouteMethod =>
   (ADMIN_ROUTE_METHODS as readonly string[]).includes(method);
 
-export interface AdminRouteDeps {
+export interface AdminRouteDeps extends AdminReportDeps {
   readonly accounts: AccountService;
   readonly sessions: SessionService;
   readonly adminAccounts: AdminAccountService;
@@ -39,7 +40,7 @@ export interface AdminRouteDeps {
 
 type IdParams = { readonly id: string };
 
-const roleChangeSchema = z.object({ role: z.enum(ROLES), confirm: z.literal(true) }).strict();
+const roleChangeSchema = z.object({ role: roleSchema, confirm: z.literal(true) }).strict();
 
 const ROLE_CHANGE_REFUSALS = {
   'not-found': { status: 404, code: 'NOT_FOUND', message: 'No such account.' },
@@ -69,12 +70,17 @@ export async function adminRoutes(app: FastifyInstance, deps: AdminRouteDeps): P
     });
     scope.addHook('preHandler', requireTraveler(deps.sessions));
     scope.addHook('preHandler', requireAdministrator(deps.accounts));
+    // Everything here is about other people (their email addresses, Plans and feedback): a browser must not keep it.
+    scope.addHook('onSend', async (_request, reply) => {
+      void reply.header('Cache-Control', 'no-store');
+    });
 
     scope.get('/api/admin/dashboard', async () => ({ functions: ADMIN_FUNCTIONS }));
     registerAccountRoutes(scope, deps);
     registerDestinationRoutes(scope, deps);
     registerAiRoutes(scope, deps);
     registerNotificationRoutes(scope, deps);
+    registerReportRoutes(scope, deps);
   });
 }
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import type { Role } from '../../../shared/admin-functions';
 import { api } from '../../api-client';
 import { roleLabel, statusLabel, type AdminAccount } from './admin-account';
 
@@ -10,6 +11,17 @@ type UsersState =
 
 export function AdminUsersPage() {
   const [users, setUsers] = useState<UsersState>({ state: 'loading' });
+  const [roles, setRoles] = useState<readonly { readonly role: Role; readonly label: string }[]>([]);
+
+  useEffect(() => {
+    let isCurrent = true;
+    void api<{ roles: { role: Role; label: string }[] }>('GET', '/api/admin/roles').then((result) => {
+      if (isCurrent && result.ok) setRoles(result.data.roles);
+    });
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
 
   useEffect(() => {
     let isCurrent = true;
@@ -29,6 +41,10 @@ export function AdminUsersPage() {
   return (
     <>
       <h1>Users</h1>
+      {roles.length > 0 ? <p>{`Roles an account can hold: ${roles.map((role) => role.label).join(', ')}.`}</p> : null}
+      <p>
+        <Link to="/admin/trips">All Travelers’ Trips</Link>
+      </p>
       {users.state === 'loading' ? <p>Loading…</p> : null}
       {users.state === 'failed' ? <p role="alert">{users.message}</p> : null}
       {users.state === 'loaded' ? (

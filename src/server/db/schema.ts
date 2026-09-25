@@ -1,4 +1,5 @@
-import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { sql } from 'drizzle-orm';
+import { check, index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { AI_REQUEST_KINDS, AI_REQUEST_STATUSES } from '../../shared/ai-limits';
 import { CHAT_ROLES, PROPOSAL_STATUSES } from '../../shared/chat-schemas';
 import { CURRENCIES } from '../../shared/currencies';
@@ -210,4 +211,26 @@ export const notificationLog = sqliteTable(
     sentAt: integer('sent_at', { mode: 'timestamp_ms' }).notNull(),
   },
   (table) => [index('notification_log_trip_kind_idx').on(table.tripId, table.kind, table.sentAt)],
+);
+
+/**
+ * A Traveler's feedback on a Trip's Plan: one per Trip, the latest replacing the earlier (REQ-TRV-062). It holds a copy of
+ * the Destination and deliberately no account, so the Traveler is reachable only through the Trip. When the Trip is
+ * permanently deleted `trip_id` is cleared, and what is left (rating, comment, Destination, date) links to nobody
+ * (REQ-TRV-100). `updated_at` is the date the feedback carries.
+ */
+export const feedback = sqliteTable(
+  'feedback',
+  {
+    id: text('id').primaryKey(),
+    tripId: text('trip_id').references(() => trips.id, { onDelete: 'set null' }),
+    planVersion: integer('plan_version').notNull(),
+    rating: integer('rating').notNull(),
+    comment: text('comment'),
+    destinationName: text('destination_name').notNull(),
+    destinationCountry: text('destination_country').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [uniqueIndex('feedback_trip_idx').on(table.tripId), check('feedback_rating_range', sql`${table.rating} between 1 and 5`)],
 );
