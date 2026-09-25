@@ -1,0 +1,86 @@
+id: CHG-0002
+raised: 2026-09-25
+stream: discovered_constraint
+source: "Developer (Kartik Chandra Biswas), session 2026-09-25: invoked /change-record after the slice 3 plan offered option (b)"
+raw: "/change-record"
+context: >-
+  Planning slice 3 (Trips) found that 13 of its acceptance criteria can only be
+  tested once later slices exist. They need Plan generation (slice 4), a saved
+  Plan (slice 5), the transportation preference (slice 6), regeneration
+  (slice 7), chat (slice 8), and feedback plus the admin view of Trips
+  (slice 12). As with CHG-0001, what changed is the build order in
+  slices.yaml, not the client's scope. Left as they were, REQ-TRV-007, 011,
+  012, 014 and 015 would either reach `verified` with criteria untested, or
+  hold slice 3 open while the slice gate blocks slice 4. Every criterion moves
+  word for word to a new requirement in the slice that can test it. No
+  criterion's wording changes.
+affects: [REQ-TRV-007, REQ-TRV-011, REQ-TRV-012, REQ-TRV-014, REQ-TRV-015]
+creates: [REQ-TRV-096, REQ-TRV-097, REQ-TRV-098, REQ-TRV-099, REQ-TRV-100, REQ-TRV-101]
+moves:
+  - from: REQ-TRV-011 v1 criterion 8 (default travel style, food preference and transportation reach the AI)
+    to: REQ-TRV-096
+    slice: 6
+  - from: REQ-TRV-012 v1 criterion 6 (a past Trip opens with its Plan)
+    to: REQ-TRV-097
+    slice: 5
+  - from: REQ-TRV-014 v1 criteria 2 to 8 (changing Destination, dates, adults or budget of a Trip that has a Plan)
+    to: REQ-TRV-098
+    slice: 7
+  - from: REQ-TRV-015 v1 criteria 2 and 3 (restore within 30 days with Plan and chat; permanent deletion after 30 days)
+    to: REQ-TRV-099
+    slice: 8
+  - from: REQ-TRV-015 v1 criterion 4 (feedback kept, anonymised, after permanent deletion)
+    to: REQ-TRV-100
+    slice: 12
+  - from: REQ-TRV-007 v1 criterion 5 (an Administrator sees a Trip's summary without Days or Activities)
+    to: REQ-TRV-101
+    slice: 12
+analysis:
+  dependants:
+    # agreed requirements that now depend on a draft one; they cannot be planned
+    # until their dependency is re-agreed
+    - REQ-TRV-012   # on REQ-TRV-011; also affected itself
+    - REQ-TRV-013   # on REQ-TRV-011; slice 3, otherwise unchanged
+    - REQ-TRV-016   # on REQ-TRV-011; slice 3, otherwise unchanged
+    - REQ-TRV-061   # on REQ-TRV-014; slice 3, otherwise unchanged
+    - REQ-TRV-093   # on REQ-TRV-011; slice 3, otherwise unchanged
+    - REQ-TRV-095   # on REQ-TRV-011 and REQ-TRV-015; slice 3, otherwise unchanged
+    - REQ-TRV-020   # on REQ-TRV-011
+    - REQ-TRV-021   # on REQ-TRV-011
+    - REQ-TRV-022   # on REQ-TRV-011
+    - REQ-TRV-023   # on REQ-TRV-011
+    - REQ-TRV-025   # on REQ-TRV-011
+    - REQ-TRV-026   # on REQ-TRV-011
+    - REQ-TRV-055   # on REQ-TRV-011
+    - REQ-TRV-057   # on REQ-TRV-011
+  tests_invalidated: 0   # no test is annotated with any affected requirement yet
+  estimate: "No build effort added or removed; the same criteria are built, in the slices that can test them"
+  build_note: >-
+    Soft delete is still built in slice 3: REQ-TRV-015 criterion 1 removes the
+    Trip from the list, and REQ-TRV-095 criterion 2 needs a deleted Trip to keep
+    holding its Destination. Restore and the 30-day purge move to slice 8 with
+    REQ-TRV-099.
+  not_included: >-
+    REQ-TRV-010 (verified) is still not fully tested: criterion 2 (the Trip form
+    is pre-filled from the profile) and criterion 3 (a saved Trip keeps its travel
+    style after the profile changes) need the Trip form and saved Trips. CHG-0001
+    flagged the same gap. Slice 3 builds the Trip form, so criterion 2 becomes
+    partly testable, but food preference is not a Trip field until slice 6. The
+    developer has not confirmed including it, so it is left unchanged.
+decision: absorbed
+commercial: >-
+  Absorbed, no charge: no criterion's wording changed and no scope was added or
+  removed. Decided by the developer 2026-09-25 (recorded in ANSWERS.md). The
+  client is to be informed of the regrouping in the next report.
+outcome:
+  - REQ-TRV-007: v2
+  - REQ-TRV-011: v2
+  - REQ-TRV-012: v2
+  - REQ-TRV-014: v2
+  - REQ-TRV-015: v2
+  - REQ-TRV-096: v1 (new, slice 6)
+  - REQ-TRV-097: v1 (new, slice 5)
+  - REQ-TRV-098: v1 (new, slice 7)
+  - REQ-TRV-099: v1 (new, slice 8)
+  - REQ-TRV-100: v1 (new, slice 12)
+  - REQ-TRV-101: v1 (new, slice 12)

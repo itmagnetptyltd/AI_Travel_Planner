@@ -194,8 +194,18 @@
   module: TRV
   priority: must
   status: agreed
-  version: 1
-  source: BRD v1.0 §22 Security; §30 FR-02; clarified by client confirmation relayed in session 2026-09-23
+  version: 2
+  history:
+    - version: 1
+      agreed: 2026-09-23
+      superseded_by: 2
+      summary: >-
+        v1 also held the criterion that an Administrator requesting a Trip that has a
+        Plan and no feedback receives its Destination, dates, number of travelers,
+        budget and status, and no Days or Activities. Moved unchanged to REQ-TRV-101 by
+        CHG-0002, because it needs a saved Plan and the admin view of Trips (slices 5
+        and 12), which slice 3 does not build.
+  source: BRD v1.0 §22 Security; §30 FR-02; clarified by client confirmation relayed in session 2026-09-23; re-agreed after CHG-0002 by developer confirmation 2026-09-25
   acceptance:
     - given: Traveler X owns a Trip and Traveler Y is logged in
       when: Y requests X's Trip by its identifier
@@ -211,13 +221,6 @@
         Administrator
       when: An account that is neither X nor an Administrator requests X's Trip
       then: The response is 404 and carries no Trip fields
-    - given: >-
-        Traveler X owns a Trip with a Plan and no feedback, and an Administrator is
-        logged in
-      when: The Administrator requests X's Trip
-      then: >-
-        The response carries the Trip's Destination, dates, number of travelers, budget
-        and status, and carries no Days or Activities
   depends_on: [REQ-TRV-011]
   belts: [A, B, C]
 
@@ -295,8 +298,18 @@
   module: TRV
   priority: must
   status: agreed
-  version: 1
-  source: BRD v1.0 §6; §30 FR-02; §27; §25 Release 1; clarified by client confirmation relayed in session 2026-09-23
+  version: 2
+  history:
+    - version: 1
+      agreed: 2026-09-23
+      superseded_by: 2
+      summary: >-
+        v1 also held the criterion that a Plan generated, with an AI test double, for a
+        Trip with no travel style, food preference or transportation carries Balanced,
+        No Preference and Mixed. Moved unchanged to REQ-TRV-096 by CHG-0002, because
+        it needs Plan generation and the transportation preference (slices 4 and 6),
+        which slice 3 does not build.
+  source: BRD v1.0 §6; §30 FR-02; §27; §25 Release 1; clarified by client confirmation relayed in session 2026-09-23; re-agreed after CHG-0002 by developer confirmation 2026-09-25
   acceptance:
     - given: >-
         A logged-in Traveler whose email address is confirmed, and an enabled
@@ -332,11 +345,6 @@
         They submit an otherwise complete Trip with the number of children and every
         preference left blank
       then: The Trip is created with 0 children and no preferences
-    - given: A Trip created with no travel style, food preference or transportation
-      when: A Plan is generated with the AI service replaced by a test double
-      then: >-
-        The request received by the test double carries travel style Balanced, food
-        preference No Preference and transportation Mixed
     - given: >-
         A Trip submitted through the Trip API with 2 adults, 1 child and a separately
         supplied number of travelers of 5
@@ -368,8 +376,17 @@
   module: TRV
   priority: must
   status: agreed
-  version: 1
-  source: BRD v1.0 §6 (start date, end date); glossary Day ("from the start date through the end date"); clarified by client confirmation relayed in session 2026-09-23
+  version: 2
+  history:
+    - version: 1
+      agreed: 2026-09-23
+      superseded_by: 2
+      summary: >-
+        v1 also held the criterion that, today being 2026-09-23, a saved Trip that ran
+        from 2026-09-01 to 2026-09-05 opens showing the Trip and its Plan. Moved
+        unchanged to REQ-TRV-097 by CHG-0002, because it needs a saved Plan (slice 5),
+        which slice 3 does not build.
+  source: BRD v1.0 §6 (start date, end date); glossary Day ("from the start date through the end date"); clarified by client confirmation relayed in session 2026-09-23; re-agreed after CHG-0002 by developer confirmation 2026-09-25
   acceptance:
     - given: A logged-in Traveler
       when: They submit a Trip with start date 2026-10-17 and end date 2026-10-10
@@ -386,9 +403,6 @@
     - given: Today is 2026-09-23
       when: A Traveler submits a new Trip starting and ending on 2026-09-23
       then: The Trip is created as a 1-Day Trip
-    - given: Today is 2026-09-23 and a saved Trip ran from 2026-09-01 to 2026-09-05
-      when: Its owner opens it
-      then: The Trip and its Plan are shown
     - given: Today is 2026-09-23 and a saved Trip starts on 2026-10-10
       when: Its owner edits the start date to 2026-09-20
       then: >-
@@ -416,48 +430,23 @@
   module: TRV
   priority: must
   status: agreed
-  version: 1
-  source: BRD v1.0 §13 ("Users can edit, regenerate, delete and share saved itineraries"); §30 FR-02 ("Create and manage trips"); clarified by client confirmation relayed in session 2026-09-23
+  version: 2
+  history:
+    - version: 1
+      agreed: 2026-09-23
+      superseded_by: 2
+      summary: >-
+        v1 also held seven criteria on editing a Trip that has a Plan: a Destination
+        change warns, then regenerates the Plan; a date change drops Days (with a
+        warning), keeps them, or shifts them, and offers to generate new Days; and a
+        change to adults or budget leaves the Plan unchanged with a banner. Moved
+        unchanged to REQ-TRV-098 by CHG-0002, because they need a saved Plan and
+        regeneration (slices 5 and 7), which slice 3 does not build.
+  source: BRD v1.0 §13 ("Users can edit, regenerate, delete and share saved itineraries"); §30 FR-02 ("Create and manage trips"); clarified by client confirmation relayed in session 2026-09-23; re-agreed after CHG-0002 by developer confirmation 2026-09-25
   acceptance:
     - given: A saved Trip named "Tokyo Family Holiday"
       when: Its owner changes the name to "Tokyo Autumn" and saves
       then: The Trip is listed as "Tokyo Autumn"
-    - given: A saved Trip to Tokyo with a Plan
-      when: Its owner changes the Destination to Kyoto
-      then: >-
-        A warning that the Plan will be regenerated is shown, and the Trip and its Plan
-        are unchanged until the owner confirms
-    - given: >-
-        A saved Trip to Tokyo with a Plan, an enabled Destination Kyoto, and an AI test
-        double
-      when: Its owner changes the Destination to Kyoto and confirms
-      then: >-
-        The test double receives a generation request for Kyoto and the Trip shows the
-        Plan it returned
-    - given: A saved 8-Day Trip with a Plan
-      when: Its owner changes the end date so that the Trip has 5 Days
-      then: >-
-        A warning that Days 6 to 8 will be dropped is shown before the change is saved
-    - given: A saved 8-Day Trip with a Plan
-      when: Its owner changes the end date so that the Trip has 5 Days and confirms
-      then: >-
-        The Plan has 5 Days holding the same Activities as the former Days 1 to 5, in
-        the same order
-    - given: A saved 8-Day Trip with a Plan
-      when: Its owner changes the end date so that the Trip has 10 Days
-      then: >-
-        Days 1 to 8 hold the same Activities as before, Days 9 and 10 hold no
-        Activities, and an offer to generate Days 9 and 10 is shown
-    - given: A saved Trip from 2026-10-10 to 2026-10-17 with a Plan
-      when: Its owner moves the dates to 2026-10-12 to 2026-10-19
-      then: >-
-        Day 1 is dated 2026-10-12 and holds the Activities formerly dated 2026-10-10,
-        and every later Day follows in the same order
-    - given: A saved Trip with a Plan
-      when: Its owner changes the number of adults or the budget and saves
-      then: >-
-        The Plan is unchanged and a banner suggests regenerating the Plan or
-        re-estimating its costs
   depends_on: [REQ-TRV-011]
   belts: [A, B, C]
 
@@ -466,27 +455,23 @@
   module: TRV
   priority: must
   status: agreed
-  version: 1
-  source: BRD v1.0 §13 ("Users can edit, regenerate, delete and share saved itineraries"); §30 FR-02; clarified by client confirmation relayed in session 2026-09-23
+  version: 2
+  history:
+    - version: 1
+      agreed: 2026-09-23
+      superseded_by: 2
+      summary: >-
+        v1 also held three criteria: a Trip restored 10 days after deletion reappears
+        with its Plan and chat; 31 days after deletion no Trip, Plan or chat record
+        remains and no restore is offered; and feedback on a permanently deleted Trip
+        is kept, anonymised. Moved unchanged by CHG-0002, the first two to
+        REQ-TRV-099 (slice 8) and the third to REQ-TRV-100 (slice 12), because they
+        need Plans, chat and feedback, which slice 3 does not build.
+  source: BRD v1.0 §13 ("Users can edit, regenerate, delete and share saved itineraries"); §30 FR-02; clarified by client confirmation relayed in session 2026-09-23; re-agreed after CHG-0002 by developer confirmation 2026-09-25
   acceptance:
     - given: A Traveler with a saved Trip
       when: They delete it
       then: The Trip no longer appears in their list of Trips
-    - given: A Traveler deleted a Trip 10 days ago
-      when: They restore it
-      then: The Trip reappears in their list of Trips with its Plan and chat
-    - given: A Trip deleted 31 days ago
-      when: The stored data is inspected
-      then: >-
-        No Trip, Plan or chat record for it remains, and no restore is offered to the
-        Traveler
-    - given: >-
-        A deleted Trip to Tokyo carrying feedback rated 4 with the comment "Day 2 too
-        busy"
-      when: The Trip is permanently deleted after 30 days
-      then: >-
-        The feedback remains with rating 4, that comment, Destination Tokyo and its
-        date, and with no link to the Traveler or the Trip
   depends_on: [REQ-TRV-011]
   belts: [A, B, C]
 
@@ -2404,4 +2389,140 @@
       when: An Administrator tries to remove it
       then: The removal is refused and Kyoto is still listed
   depends_on: [REQ-TRV-075, REQ-TRV-011, REQ-TRV-015]
+  belts: [A, B, C]
+
+# ---------------------------------------------------------------------------
+# CHG-0002: slice 3 (Trips) criteria moved, word for word, to the slices that
+# can test them
+# ---------------------------------------------------------------------------
+- id: REQ-TRV-096
+  title: A Trip with no travel style, food preference or transportation is planned as Balanced, No Preference and Mixed
+  module: TRV
+  priority: must
+  status: agreed
+  version: 1
+  source: CHG-0002; moved from REQ-TRV-011 v1 (BRD v1.0 §6; §30 FR-02; §27; §25 Release 1; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0002 by developer confirmation 2026-09-25
+  acceptance:
+    - given: A Trip created with no travel style, food preference or transportation
+      when: A Plan is generated with the AI service replaced by a test double
+      then: >-
+        The request received by the test double carries travel style Balanced, food
+        preference No Preference and transportation Mixed
+  depends_on: [REQ-TRV-011, REQ-TRV-026]
+  belts: [A, B, C]
+
+- id: REQ-TRV-097
+  title: A Trip whose dates have passed still opens with its Plan
+  module: TRV
+  priority: must
+  status: agreed
+  version: 1
+  source: CHG-0002; moved from REQ-TRV-012 v1 (BRD v1.0 §6; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0002 by developer confirmation 2026-09-25
+  acceptance:
+    - given: Today is 2026-09-23 and a saved Trip ran from 2026-09-01 to 2026-09-05
+      when: Its owner opens it
+      then: The Trip and its Plan are shown
+  depends_on: [REQ-TRV-012, REQ-TRV-018]
+  belts: [A, B, C]
+
+- id: REQ-TRV-098
+  title: Changing a saved Trip's Destination, dates, travelers or budget treats its Plan as agreed
+  module: TRV
+  priority: must
+  status: agreed
+  version: 1
+  source: CHG-0002; moved from REQ-TRV-014 v1 (BRD v1.0 §13; §30 FR-02; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0002 by developer confirmation 2026-09-25
+  acceptance:
+    - given: A saved Trip to Tokyo with a Plan
+      when: Its owner changes the Destination to Kyoto
+      then: >-
+        A warning that the Plan will be regenerated is shown, and the Trip and its Plan
+        are unchanged until the owner confirms
+    - given: >-
+        A saved Trip to Tokyo with a Plan, an enabled Destination Kyoto, and an AI test
+        double
+      when: Its owner changes the Destination to Kyoto and confirms
+      then: >-
+        The test double receives a generation request for Kyoto and the Trip shows the
+        Plan it returned
+    - given: A saved 8-Day Trip with a Plan
+      when: Its owner changes the end date so that the Trip has 5 Days
+      then: >-
+        A warning that Days 6 to 8 will be dropped is shown before the change is saved
+    - given: A saved 8-Day Trip with a Plan
+      when: Its owner changes the end date so that the Trip has 5 Days and confirms
+      then: >-
+        The Plan has 5 Days holding the same Activities as the former Days 1 to 5, in
+        the same order
+    - given: A saved 8-Day Trip with a Plan
+      when: Its owner changes the end date so that the Trip has 10 Days
+      then: >-
+        Days 1 to 8 hold the same Activities as before, Days 9 and 10 hold no
+        Activities, and an offer to generate Days 9 and 10 is shown
+    - given: A saved Trip from 2026-10-10 to 2026-10-17 with a Plan
+      when: Its owner moves the dates to 2026-10-12 to 2026-10-19
+      then: >-
+        Day 1 is dated 2026-10-12 and holds the Activities formerly dated 2026-10-10,
+        and every later Day follows in the same order
+    - given: A saved Trip with a Plan
+      when: Its owner changes the number of adults or the budget and saves
+      then: >-
+        The Plan is unchanged and a banner suggests regenerating the Plan or
+        re-estimating its costs
+  depends_on: [REQ-TRV-014, REQ-TRV-017, REQ-TRV-041, REQ-TRV-042]
+  belts: [A, B, C]
+
+- id: REQ-TRV-099
+  title: A deleted Trip can be restored with its Plan and chat for 30 days, then is removed
+  module: TRV
+  priority: must
+  status: agreed
+  version: 1
+  source: CHG-0002; moved from REQ-TRV-015 v1 (BRD v1.0 §13; §30 FR-02; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0002 by developer confirmation 2026-09-25
+  acceptance:
+    - given: A Traveler deleted a Trip 10 days ago
+      when: They restore it
+      then: The Trip reappears in their list of Trips with its Plan and chat
+    - given: A Trip deleted 31 days ago
+      when: The stored data is inspected
+      then: >-
+        No Trip, Plan or chat record for it remains, and no restore is offered to the
+        Traveler
+  depends_on: [REQ-TRV-015, REQ-TRV-017, REQ-TRV-035]
+  belts: [A, B, C]
+
+- id: REQ-TRV-100
+  title: Feedback on a permanently deleted Trip is kept without any link to the Traveler or the Trip
+  module: TRV
+  priority: must
+  status: agreed
+  version: 1
+  source: CHG-0002; moved from REQ-TRV-015 v1 (BRD v1.0 §13; §30 FR-02; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0002 by developer confirmation 2026-09-25
+  acceptance:
+    - given: >-
+        A deleted Trip to Tokyo carrying feedback rated 4 with the comment "Day 2 too
+        busy"
+      when: The Trip is permanently deleted after 30 days
+      then: >-
+        The feedback remains with rating 4, that comment, Destination Tokyo and its
+        date, and with no link to the Traveler or the Trip
+  depends_on: [REQ-TRV-099, REQ-TRV-062]
+  belts: [A, B, C]
+
+- id: REQ-TRV-101
+  title: An Administrator sees a Trip's summary but not its Days or Activities
+  module: TRV
+  priority: must
+  status: agreed
+  version: 1
+  source: CHG-0002; moved from REQ-TRV-007 v1 (BRD v1.0 §22 Security; §30 FR-02; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0002 by developer confirmation 2026-09-25
+  acceptance:
+    - given: >-
+        Traveler X owns a Trip with a Plan and no feedback, and an Administrator is
+        logged in
+      when: The Administrator requests X's Trip
+      then: >-
+        The response carries the Trip's Destination, dates, number of travelers, budget
+        and status, and carries no Days or Activities
+  depends_on: [REQ-TRV-007, REQ-TRV-017, REQ-TRV-068]
   belts: [A, B, C]

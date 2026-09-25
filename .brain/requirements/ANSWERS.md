@@ -339,3 +339,9 @@ Nothing beyond users, Destinations, feedback, notification settings and AI usage
 _CHG-0001 moved 9 acceptance criteria, word for word, out of REQ-TRV-068, 071, 072, 074, 075 and 078 into new requirements REQ-TRV-091 to 095, so that each requirement can be tested in the slice that builds it. Are the regrouped requirements agreed?_
 
 **From the developer** (Kartik Chandra Biswas), session 2026-09-24: agreed as absorbed. No criterion's wording changed and no scope was added or removed; the client confirmed every moved criterion on 2026-09-23 as part of the v1 text. The client is to be informed of the regrouping in the next report, not asked first.
+
+## CHG-0002: regrouping slice 3 criteria across slices
+
+_CHG-0002 moved 13 acceptance criteria, word for word, out of REQ-TRV-007, 011, 012, 014 and 015 into new requirements REQ-TRV-096 to 101, so that each requirement can be tested in the slice that builds it (slices 5, 6, 7, 8 and 12). Are the regrouped requirements agreed, and is the change absorbed, varied, deferred or declined?_
+
+**From the developer** (Kartik Chandra Biswas), session 2026-09-25: agreed as absorbed. No criterion's wording changed and no scope was added or removed; the client confirmed every moved criterion on 2026-09-23 as part of the v1 text. The client is to be informed of the regrouping in the next report, not asked first.
