@@ -56,7 +56,7 @@ export async function fillNewTrip(page: Page, trip: TripDetails): Promise<void> 
   await page.getByLabel('End date').fill(trip.endDate ?? daysFromToday(10));
   await page.getByLabel('Adults').fill(trip.adults ?? '2');
   await page.getByLabel('Children').fill(trip.children ?? '0');
-  await page.getByLabel('Budget').fill(trip.budget ?? '5000');
+  await page.getByRole('spinbutton', { name: 'Budget' }).fill(trip.budget ?? '5000');
   await page.getByLabel('Currency').selectOption(trip.currency ?? 'USD');
 }
 

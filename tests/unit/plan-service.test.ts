@@ -405,6 +405,24 @@ describe('what the AI is told', () => {
   });
 });
 
+describe('what the AI is told about who the Traveler is', () => {
+  // @covers REQ-TRV-028@v1
+  test('has neither the name Jane Citizen, the Trip name "Jane Citizen 40th birthday", nor the account identifier', async () => {
+    const { db, plans, ai, ownerId, aTrip } = aPlanService();
+    db.update(accounts).set({ displayName: 'Jane Citizen' }).where(eq(accounts.id, ownerId)).run();
+    const trip = aTrip({ name: 'Jane Citizen 40th birthday', travelStyles: ['Family'], foodPreferences: ['Vegetarian'] });
+
+    await plans.generate(ownerId, trip.id);
+
+    const [request] = ai.requests;
+    const text = requestTextOf(request ?? { system: '', user: '' });
+    expect(text).toContain('Travel style: Family');
+    expect(text).not.toContain('Jane Citizen');
+    expect(text).not.toContain('40th birthday');
+    expect(text).not.toContain(ownerId);
+  });
+});
+
 describe('the stored record of a generation', () => {
   // @covers REQ-TRV-034@v1
   test('keeps the text sent, the text returned, the token counts and the cost', async () => {

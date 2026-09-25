@@ -288,3 +288,117 @@ describe('removing a Destination a Trip uses', () => {
     expect(harness.destinations.listForAdmin().map((d) => d.name)).toEqual(['Tokyo']);
   });
 });
+
+describe('the preferences of a Trip', () => {
+  const FIVE_ACCOMMODATION_VALUES = {
+    type: 'Hotel',
+    budgetRange: '100 to 200 a night',
+    preferredLocation: 'near the city centre',
+    rating: '4 stars or better',
+    facilities: 'breakfast, wifi',
+  };
+
+  // @covers REQ-TRV-020@v1
+  test('a Trip saved with travel styles Family and Cultural shows both when reopened', () => {
+    const harness = aHarness();
+    const owner = anOwner(harness.db);
+    const trip = created(harness, owner, { travelStyles: ['Family', 'Cultural'] });
+
+    expect(harness.trips.getForOwner(owner, trip.id)?.travelStyles).toEqual(['Family', 'Cultural']);
+  });
+
+  // @covers REQ-TRV-021@v1
+  test('a Trip saved with interests History and Food shows both when reopened', () => {
+    const harness = aHarness();
+    const owner = anOwner(harness.db);
+    const trip = created(harness, owner, { interests: ['History', 'Food'] });
+
+    expect(harness.trips.getForOwner(owner, trip.id)?.interests).toEqual(['History', 'Food']);
+  });
+
+  // @covers REQ-TRV-022@v1
+  test('a Trip saved with food preferences Vegetarian and Gluten-Free shows both when reopened', () => {
+    const harness = aHarness();
+    const owner = anOwner(harness.db);
+    const trip = created(harness, owner, { foodPreferences: ['Vegetarian', 'Gluten-Free'] });
+
+    expect(harness.trips.getForOwner(owner, trip.id)?.foodPreferences).toEqual(['Vegetarian', 'Gluten-Free']);
+  });
+
+  // @covers REQ-TRV-023@v1
+  test('a Trip saved with transportation Public Transport and Walking shows both when reopened', () => {
+    const harness = aHarness();
+    const owner = anOwner(harness.db);
+    const trip = created(harness, owner, { transportation: ['Public Transport', 'Walking'] });
+
+    expect(harness.trips.getForOwner(owner, trip.id)?.transportation).toEqual(['Public Transport', 'Walking']);
+  });
+
+  // @covers REQ-TRV-025@v1
+  test('a Trip saved with the five accommodation values shows the same five when reopened', () => {
+    const harness = aHarness();
+    const owner = anOwner(harness.db);
+    const trip = created(harness, owner, { accommodation: FIVE_ACCOMMODATION_VALUES });
+
+    expect(harness.trips.getForOwner(owner, trip.id)?.accommodation).toEqual(FIVE_ACCOMMODATION_VALUES);
+  });
+
+  // @covers REQ-TRV-096@v1
+  test('a Trip saved with no preferences has none stored, so the defaults are never mistaken for choices', () => {
+    const harness = aHarness();
+
+    const trip = created(harness, anOwner(harness.db));
+
+    expect(trip).toMatchObject({ travelStyles: [], interests: [], foodPreferences: [], transportation: [], accommodation: null });
+  });
+
+  // @covers REQ-TRV-022@v1
+  test('editing one preference changes only that preference', () => {
+    const harness = aHarness();
+    const owner = anOwner(harness.db);
+    const trip = created(harness, owner, { travelStyles: ['Family'], interests: ['Nature'], accommodation: FIVE_ACCOMMODATION_VALUES });
+
+    const result = harness.trips.update(owner, trip.id, { foodPreferences: ['Halal'] });
+
+    expect(result).toMatchObject({
+      ok: true,
+      trip: { travelStyles: ['Family'], interests: ['Nature'], foodPreferences: ['Halal'], accommodation: FIVE_ACCOMMODATION_VALUES },
+    });
+  });
+
+  // @covers REQ-TRV-025@v1
+  test.each([
+    ['an empty set of values', {}],
+    ['values that are only spaces', { type: '  ', rating: '' }],
+  ])('a Trip saved with %s has no accommodation preferences, exactly as if none were sent', (_description, accommodation) => {
+    const harness = aHarness();
+    const owner = anOwner(harness.db);
+
+    const trip = created(harness, owner, { accommodation });
+
+    expect(harness.trips.getForOwner(owner, trip.id)?.accommodation).toBeNull();
+  });
+
+  // @covers REQ-TRV-025@v1
+  test('editing with only some accommodation values replaces the whole set, as the Trip form always sends all five', () => {
+    const harness = aHarness();
+    const owner = anOwner(harness.db);
+    const trip = created(harness, owner, { accommodation: FIVE_ACCOMMODATION_VALUES });
+
+    const result = harness.trips.update(owner, trip.id, { accommodation: { type: 'Hostel' } });
+
+    expect(result).toMatchObject({ ok: true, trip: { accommodation: { type: 'Hostel' } } });
+  });
+
+  // @covers REQ-TRV-025@v1
+  test('editing the accommodation to null clears it', () => {
+    const harness = aHarness();
+    const owner = anOwner(harness.db);
+    const trip = created(harness, owner, { accommodation: FIVE_ACCOMMODATION_VALUES });
+
+    const result = harness.trips.update(owner, trip.id, { accommodation: null });
+
+    expect(result).toMatchObject({ ok: true, trip: { accommodation: null } });
+  });
+});
+

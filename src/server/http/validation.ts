@@ -26,10 +26,12 @@ function offendingField(issue: z.core.$ZodIssue | undefined): string {
   if (!issue) {
     return 'body';
   }
-  if (issue.code === 'unrecognized_keys') {
-    return issue.keys[0] ?? 'body';
+  // A list or a nested object is named by the field the Traveler sees, not by the position inside it:
+  // `travelStyles`, never `travelStyles.0`.
+  if (issue.path.length > 0) {
+    return String(issue.path[0]);
   }
-  return issue.path.length > 0 ? issue.path.map(String).join('.') : 'body';
+  return issue.code === 'unrecognized_keys' ? (issue.keys[0] ?? 'body') : 'body';
 }
 
 const PASSWORD_MESSAGES: Readonly<Record<PasswordProblem, string>> = {

@@ -594,7 +594,13 @@
   title: A Traveler can set a Trip's travel style from the eight listed styles
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/trip-preferences.spec.ts
+    - tests/api/trip-preferences.http.spec.ts
+    - tests/unit/trip-form-state.test.ts
+    - tests/unit/trip-preferences.test.ts
+    - tests/unit/trip-service.test.ts
   version: 1
   source: BRD v1.0 §7; §30 FR-03; §25 Release 2; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -617,7 +623,13 @@
   title: A Traveler can set a Trip's interests from the twelve listed interests
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/trip-preferences.spec.ts
+    - tests/api/trip-preferences.http.spec.ts
+    - tests/unit/trip-form-state.test.ts
+    - tests/unit/trip-preferences.test.ts
+    - tests/unit/trip-service.test.ts
   version: 1
   source: BRD v1.0 §7; §30 FR-03; §25 Release 2
   acceptance:
@@ -636,7 +648,13 @@
   title: A Traveler can set a Trip's food preference from the six listed options
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/trip-preferences.spec.ts
+    - tests/api/trip-preferences.http.spec.ts
+    - tests/unit/trip-form-state.test.ts
+    - tests/unit/trip-preferences.test.ts
+    - tests/unit/trip-service.test.ts
   version: 1
   source: BRD v1.0 §7; §30 FR-03; §25 Release 2 ("dietary requirements"); clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -660,7 +678,12 @@
   title: A Traveler can set a Trip's transportation from the five listed options
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/trip-preferences.spec.ts
+    - tests/api/trip-preferences.http.spec.ts
+    - tests/unit/trip-preferences.test.ts
+    - tests/unit/trip-service.test.ts
   version: 1
   source: BRD v1.0 §7; §30 FR-03; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -684,7 +707,10 @@
   title: A travel preference value outside the listed options is refused
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - tests/api/trip-preferences.http.spec.ts
+    - tests/unit/trip-preferences.test.ts
   version: 1
   source: BRD v1.0 §7 (closed lists of styles, interests, food preferences and transportation); §30 FR-03
   acceptance:
@@ -701,7 +727,14 @@
   title: A Traveler can record accommodation preferences on a Trip
   module: TRV
   priority: should
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/trip-preferences.spec.ts
+    - tests/api/trip-preferences.http.spec.ts
+    - tests/unit/plan-prompt.test.ts
+    - tests/unit/trip-form-state.test.ts
+    - tests/unit/trip-preferences.test.ts
+    - tests/unit/trip-service.test.ts
   version: 1
   source: BRD v1.0 §12 (not in §30 matrix or §25 roadmap; nearest anchor §30 FR-03; priority raised as a question); clarified by client confirmation relayed in session 2026-09-23, §25 Release 2 (per client)
   acceptance:
@@ -844,7 +877,11 @@
   title: Plan generation gives the AI the Trip's travel style, interests, food preference and transportation
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - tests/api/trip-preferences.http.spec.ts
+    - tests/unit/plan-prompt.test.ts
+    - tests/unit/plan-service.test.ts
   version: 1
   source: BRD v1.0 §8 ("receives structured trip requirements"); §25 Release 2 ("AI personalization"); §30 FR-04; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -2508,7 +2545,12 @@
   title: A Trip with no travel style, food preference or transportation is planned as Balanced, No Preference and Mixed
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/trip-preferences.spec.ts
+    - tests/api/trip-preferences.http.spec.ts
+    - tests/unit/plan-prompt.test.ts
+    - tests/unit/trip-service.test.ts
   version: 1
   source: CHG-0002; moved from REQ-TRV-011 v1 (BRD v1.0 §6; §30 FR-02; §27; §25 Release 1; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0002 by developer confirmation 2026-09-25
   acceptance:

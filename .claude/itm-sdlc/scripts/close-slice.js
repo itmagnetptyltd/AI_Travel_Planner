@@ -154,7 +154,7 @@ function gateStart(computed, targetSlice, { force }) {
   return {
     ok: false,
     blockedBy: open,
-    reason: `Slice ${targetSlice.id} ${targetSlice.name} cannot start. Slice ${open.id} ${open.name} is ${summary}. Finish it with /tdd on the remaining ids, then /close-slice, before starting the next slice.`,
+    reason: `Slice ${targetSlice.id} ${targetSlice.name} cannot start. Slice ${open.id} ${open.name} is ${summary}. ${open.next || "Finish it with /tdd on the remaining ids, then /close-slice."}`,
   };
 }
 

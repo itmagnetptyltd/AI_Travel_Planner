@@ -42,7 +42,7 @@ test.describe('creating a Trip', () => {
 
     await page.goto('/trips/new');
 
-    await expect(page.getByLabel('Budget')).toHaveAccessibleDescription(
+    await expect(page.getByRole('spinbutton', { name: 'Budget' })).toHaveAccessibleDescription(
       'One total for the whole group, covering costs at the Destination only. It excludes flights or other travel to and from the Destination.',
     );
   });
@@ -78,8 +78,10 @@ test.describe('creating a Trip', () => {
     const tripName = uniqueName('Adventure trip');
 
     await fillNewTrip(page, { name: tripName, destinationName: destination });
-    await expect(page.getByLabel('Travel style')).toHaveValue('Family');
-    await page.getByLabel('Travel style').selectOption('Adventure');
+    const styles = page.getByRole('group', { name: 'Travel style', exact: true });
+    await expect(styles.getByRole('checkbox', { name: 'Family' })).toBeChecked();
+    await styles.getByRole('checkbox', { name: 'Family' }).uncheck();
+    await styles.getByRole('checkbox', { name: 'Adventure' }).check();
     await page.getByRole('button', { name: 'Create Trip' }).click();
     await openTrip(page, tripName);
 
@@ -213,7 +215,7 @@ test.describe('save messages', () => {
 
     await openTrip(page, tripName);
     await page.getByRole('link', { name: 'Edit' }).click();
-    await page.getByLabel('Budget').fill('6000');
+    await page.getByRole('spinbutton', { name: 'Budget' }).fill('6000');
     await page.getByRole('button', { name: 'Save changes' }).click();
 
     await expect(page.getByRole('status')).toHaveText('Trip saved.');
