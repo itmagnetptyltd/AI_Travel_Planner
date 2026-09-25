@@ -1,4 +1,5 @@
 import { useEffect, useRef, type FormEvent } from 'react';
+import type { Currency } from '../../shared/currencies';
 import type { SavedPlan } from '../../shared/plan-schemas';
 import { ChatProposal } from './ChatProposal';
 import { proposalIsOutOfDate, roleLabel } from './chat-view-state';
@@ -10,9 +11,10 @@ import { useChat } from './use-chat';
  * `planVersion` is the Plan on show, so a suggestion made for an older one is shown as out of date. `onBusyChange`
  * tells the Plan section when the chat is working, so the two never change the Plan at once.
  */
-export function ChatBox({ tripId, planVersion, isBusy, onBusyChange, onPlanChanged }: {
+export function ChatBox({ tripId, planVersion, currency, isBusy, onBusyChange, onPlanChanged }: {
   readonly tripId: string;
   readonly planVersion: number;
+  readonly currency: Currency;
   readonly isBusy: boolean;
   readonly onBusyChange: (isChatBusy: boolean) => void;
   readonly onPlanChanged: (plan: SavedPlan) => void;
@@ -44,6 +46,7 @@ export function ChatBox({ tripId, planVersion, isBusy, onBusyChange, onPlanChang
               {message.proposal ? (
                 <ChatProposal
                   proposal={message.proposal}
+                  currency={currency}
                   isOutOfDate={proposalIsOutOfDate(message.proposal, planVersion)}
                   isBusy={isWorking}
                   onAccept={decide(() => chat.accept(message.id))}

@@ -1,4 +1,6 @@
 import type { ChatProposal as Proposal } from '../../shared/chat-schemas';
+import type { Currency } from '../../shared/currencies';
+import { totalChangeLabel } from './budget-view-state';
 import { decisionLabel, proposalLines, suggestedChangeHeading } from './chat-view-state';
 
 /**
@@ -8,8 +10,9 @@ import { decisionLabel, proposalLines, suggestedChangeHeading } from './chat-vie
  * suggestion made for a Plan that has since changed cannot be accepted, and says so. Once decided it is only a
  * line saying which way it went.
  */
-export function ChatProposal({ proposal, isOutOfDate, isBusy, onAccept, onReject }: {
+export function ChatProposal({ proposal, currency, isOutOfDate, isBusy, onAccept, onReject }: {
   readonly proposal: Proposal;
+  readonly currency: Currency;
   readonly isOutOfDate: boolean;
   readonly isBusy: boolean;
   readonly onAccept: () => void;
@@ -17,6 +20,8 @@ export function ChatProposal({ proposal, isOutOfDate, isBusy, onAccept, onReject
 }) {
   const decided = decisionLabel(proposal.status);
   if (decided) return <p className="muted">{decided}</p>;
+  // Worked out against the Plan it was made for, so once that Plan has moved on the figures no longer match the budget on show.
+  const totalChange = isOutOfDate ? null : totalChangeLabel(proposal.estimatedTotal, currency);
   return (
     <div role="group" aria-label="Suggested change">
       {proposal.days.map((day) => (
@@ -32,6 +37,7 @@ export function ChatProposal({ proposal, isOutOfDate, isBusy, onAccept, onReject
           </ul>
         </div>
       ))}
+      {totalChange ? <p>{totalChange}</p> : null}
       {isOutOfDate ? (
         <p className="muted">Out of date: the Plan has changed since this was suggested. Ask again if you still want it.</p>
       ) : (

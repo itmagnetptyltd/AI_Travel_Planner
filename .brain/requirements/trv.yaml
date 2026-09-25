@@ -1481,7 +1481,12 @@
   title: A Trip shows a cost estimate for each of six categories
   module: TRV
   priority: should
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/trip-budget.spec.ts
+    - tests/api/trip-budget.http.spec.ts
+    - tests/unit/budget-view-state.test.ts
+    - tests/unit/trip-budget.test.ts
   version: 1
   source: BRD v1.0 §11 ("accommodation, food, transportation, activities, shopping and other expenses"); §30 FR-07; §25 Release 4; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -1517,7 +1522,9 @@
   title: The estimated total cost equals the sum of the six category estimates
   module: TRV
   priority: should
-  status: agreed
+  status: verified
+  verified_by:
+    - tests/unit/trip-budget.test.ts
   version: 1
   source: BRD v1.0 §11 ("estimated total cost")
   acceptance:
@@ -1531,7 +1538,12 @@
   title: A Trip shows its estimated total cost against the Traveler's budget
   module: TRV
   priority: should
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/trip-budget.spec.ts
+    - tests/api/trip-budget.http.spec.ts
+    - tests/unit/budget-view-state.test.ts
+    - tests/unit/trip-budget.test.ts
   version: 1
   source: BRD v1.0 §11 ("It should show estimated total cost versus the user's budget"); §30 FR-07; §25 Release 4; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -1554,7 +1566,10 @@
   title: The activities cost estimate reflects Activities removed from or added to the Plan
   module: TRV
   priority: should
-  status: agreed
+  status: verified
+  verified_by:
+    - tests/api/trip-budget.http.spec.ts
+    - tests/unit/trip-budget.test.ts
   version: 1
   source: BRD v1.0 §11; §12 (Activities can be removed or replaced); clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -1574,7 +1589,13 @@
   title: A Traveler can ask the AI in the chat to reduce the estimated cost of the Plan
   module: TRV
   priority: should
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/trip-budget.spec.ts
+    - tests/api/trip-budget.http.spec.ts
+    - tests/unit/budget-view-state.test.ts
+    - tests/unit/chat-prompt.test.ts
+    - tests/unit/chat-proposal.test.ts
   version: 1
   source: BRD v1.0 §11 ("Users may ask the AI to reduce the estimated cost or suggest lower-cost alternatives"); §26; §25 Release 4; clarified by client confirmation relayed in session 2026-09-23
   acceptance:

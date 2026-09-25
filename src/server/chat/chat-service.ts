@@ -9,7 +9,7 @@ import type { AiUsageLimitService } from '../plans/ai-usage-limit-service';
 import { promptInputForTrip } from '../plans/plan-request-context';
 import type { PlanGenerationSettings } from '../plans/plan-service';
 import type { PlanStore } from '../plans/plan-store';
-import { applyProposal, buildProposal } from './chat-proposal';
+import { applyProposal, buildProposal, estimatedTotalsOf } from './chat-proposal';
 import { buildChatPrompt } from './chat-prompt';
 import { parseChatReply } from './chat-reply';
 import type { ChatStore } from './chat-store';
@@ -86,7 +86,10 @@ export function createChatService(deps: {
       const proposed = buildProposal(plan, reply.changes);
       if (!proposed.ok) return unusable(reservation.recordId, answer.reply, proposed.error);
 
-      const proposal = proposed.days.length > 0 ? { basePlanVersion: plan.version, days: proposed.days } : undefined;
+      const proposal =
+        proposed.days.length > 0
+          ? { basePlanVersion: plan.version, days: proposed.days, estimatedTotal: estimatedTotalsOf(plan, proposed.days) }
+          : undefined;
       return caller.saveWithin(reservation.recordId, answer.reply, (tx): SendResult => {
         if (!trips.getForOwner(ownerId, tripId)) return { ok: false, error: 'not-found' };
         const entry = { role: 'assistant', text: reply.reply, ...(proposal ? { proposal } : {}) } as const;

@@ -1,5 +1,6 @@
 import type { PlanView } from '../../shared/plan-schemas';
 import { CHAT_MESSAGE_MAX_CHARS, CHAT_REPLY_MAX_CHARS, type ChatRole } from '../../shared/chat-schemas';
+import { estimatesOf } from '../../shared/trip-budget';
 import { asOneLine, referenceBlock, tripFacts, type PlanPrompt, type PlanPromptInput } from '../plans/plan-prompt';
 
 /** One earlier message, as the AI is shown it. */
@@ -31,7 +32,7 @@ Reply with a single JSON object and nothing else, in exactly this shape:
 }
 To change the plan, set "changes" to a list with one entry for each day you change, and include only the days you change:
 { "dayNumber": 2, "activities": [ { "title": "short name", "startTime": "HH:MM (24-hour)", "durationMinutes": 90, "estimatedCost": 25, "location": "where it happens", "reason": "why you recommend it", "category": "Food, Transportation, Activities, Shopping or Other" } ] }
-Give the whole new list of activities for each day you change, keeping activities you are not changing exactly as they are, and never leave a day with no activity. Costs are whole numbers in the trip's currency and are estimates. For a question, or a request you decline, set "changes" to null.`;
+Give the whole new list of activities for each day you change, keeping activities you are not changing exactly as they are, and never leave a day with no activity. Costs are whole numbers in the trip's currency and are estimates. When asked to reduce the cost, choose cheaper activities for the days you change and keep every other activity exactly as it is. For a question, or a request you decline, set "changes" to null.`;
 
 const cutTo = (text: string, max: number): string => asOneLine(text).slice(0, max);
 
@@ -53,8 +54,10 @@ function conversationBlock(history: readonly ChatTurn[]): string {
 }
 
 export function buildChatPrompt(input: ChatPromptInput): PlanPrompt {
+  const { total } = estimatesOf(input.plan);
   const user = `Chat about this trip.
 ${tripFacts(input.trip)}
+Estimated total of the current plan: ${total} ${input.plan.currency}
 ${referenceBlock(input.trip, ['Current plan:', ...planLines(input.plan)])}
 
 ${conversationBlock(input.history)}

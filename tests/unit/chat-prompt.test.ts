@@ -3,6 +3,7 @@ import { requestTextOf } from '../../src/server/ai/ai-service';
 import { buildChatPrompt, type ChatPromptInput } from '../../src/server/chat/chat-prompt';
 import { preferencesForPrompt } from '../../src/server/plans/plan-prompt';
 import { aPlanView, withActivityChanged } from '../support/a-plan';
+import { aPlanCosting, COSTS_TOTALLING_5600 } from '../support/a-budget';
 
 function aChatInput(overrides: Partial<ChatPromptInput> = {}): ChatPromptInput {
   return {
@@ -145,5 +146,29 @@ describe('text the Traveler wrote, held as data', () => {
     const user = userOf(aChatInput({ history: [{ role: 'assistant', text: 'A'.repeat(50_000) }] }));
 
     expect(user.length).toBeLessThan(20_000);
+  });
+});
+
+describe('what a chat message tells the AI about cost', () => {
+  // @covers REQ-TRV-053@v1
+  test('names the estimated total of the current Plan beside the budget', () => {
+    const user = userOf(aChatInput({ plan: aPlanCosting({ costs: COSTS_TOTALLING_5600 }) }));
+
+    expect(user).toContain('Estimated total of the current plan: 5600 USD');
+    expect(user).toContain('Budget: 5000 USD');
+  });
+
+  // @covers REQ-TRV-053@v1
+  test('tells the AI to choose cheaper Activities when asked to cut the cost', () => {
+    const { system } = buildChatPrompt(aChatInput());
+
+    expect(system).toMatch(/asked to reduce the cost, choose cheaper activities/i);
+  });
+
+  // @covers REQ-TRV-053@v1
+  test('tells the AI to keep every other Activity exactly as it is when it cuts the cost', () => {
+    const { system } = buildChatPrompt(aChatInput());
+
+    expect(system).toMatch(/keep every other activity exactly as it is/i);
   });
 });

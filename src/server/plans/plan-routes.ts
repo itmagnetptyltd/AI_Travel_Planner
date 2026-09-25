@@ -4,6 +4,7 @@ import { requireTraveler } from '../accounts/require-traveler';
 import type { SessionService } from '../accounts/session-service';
 import { parseBody } from '../http/validation';
 import { PLAN_NOT_FOUND, PLAN_VERSION_NOT_FOUND } from '../../shared/plan-schemas';
+import { budgetOf } from '../../shared/trip-budget';
 import type { TripService } from '../trips/trip-service';
 import { replyToRefusal, tripNotFound } from './plan-refusals';
 import type { PlanRegenerationService } from './plan-regeneration-service';
@@ -39,6 +40,14 @@ export async function planRoutes(
     const tripId = ownedTripId(request);
     if (tripId === null) return tripNotFound(reply);
     return deps.store.current(tripId) ?? reply.code(404).send({ code: PLAN_NOT_FOUND, message: 'This Trip has no Plan yet.' });
+  });
+
+  /** What the current Plan is estimated to cost, against the Trip's budget. Worked out from the saved Plan, so it never asks the AI. */
+  app.get<{ Params: IdParams }>('/api/trips/:id/budget', { preHandler: loggedIn }, async (request, reply) => {
+    const trip = deps.trips.getForOwner(ownerOf(request), request.params.id);
+    if (!trip) return tripNotFound(reply);
+    const plan = deps.store.current(trip.id);
+    return plan ? budgetOf(plan, trip) : reply.code(404).send({ code: PLAN_NOT_FOUND, message: 'This Trip has no Plan yet.' });
   });
 
   app.get<{ Params: IdParams }>('/api/trips/:id/plan/versions', { preHandler: loggedIn }, async (request, reply) => {

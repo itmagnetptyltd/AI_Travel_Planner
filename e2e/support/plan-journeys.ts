@@ -4,7 +4,7 @@ import { expect, type Browser, type Page } from '@playwright/test';
 import { E2E_AI_SCRIPT_FILE } from '../../playwright.config';
 import { aTravelerInNewContext, uniqueName } from './admin-journeys';
 import { logInThroughUi } from './journeys';
-import { aDestinationAddedByAdministrator, createTripThroughUi, daysFromToday, openTrip } from './trip-journeys';
+import { aDestinationAddedByAdministrator, createTripThroughUi, daysFromToday, openTrip, type TripDetails } from './trip-journeys';
 
 export interface AiScript {
   readonly mode: 'ok' | 'error' | 'hang';
@@ -40,14 +40,19 @@ export interface TripReadyToPlan {
 }
 
 /** A confirmed Traveler with a saved Trip of `dayCount` Days (4 unless asked) open on its page, and the AI set to answer. */
-export async function aTripReadyToPlan(browser: Browser, label: string, dayCount = TRIP_DAY_COUNT): Promise<TripReadyToPlan> {
+export async function aTripReadyToPlan(
+  browser: Browser,
+  label: string,
+  dayCount = TRIP_DAY_COUNT,
+  details: Pick<TripDetails, 'budget' | 'currency' | 'adults' | 'children'> = {},
+): Promise<TripReadyToPlan> {
   await setAiScript({ mode: 'ok', dayCount });
   const { name: destinationName, admin } = await aDestinationAddedByAdministrator(browser, 'Kyoto');
   const { page, email } = await aTravelerInNewContext(browser, label, { confirmed: true });
   await logInThroughUi(page, email);
   await expect(page.getByRole('heading', { name: 'Your Trips' })).toBeVisible();
   const tripName = uniqueName('Plan Trip');
-  await createTripThroughUi(page, { name: tripName, destinationName, endDate: daysFromToday(7 + dayCount - 1) });
+  await createTripThroughUi(page, { name: tripName, destinationName, endDate: daysFromToday(7 + dayCount - 1), ...details });
   await openTrip(page, tripName);
   return { page, email, tripName, destinationName, admin, dayCount };
 }
