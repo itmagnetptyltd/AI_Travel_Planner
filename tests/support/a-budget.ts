@@ -71,5 +71,8 @@ export function aPlanReplyCosting({ days = 8, nightly = 150, costs = {} }: Costi
   });
 }
 
+/** Costs whose 8-Day Plan totals 3200 with 150 a night: 1050 + 800 + 400 + 600 + 250 + 100. */
+export const COSTS_TOTALLING_3200: CostsByCategory = { Food: 800, Transportation: 400, Activities: 600, Shopping: 250, Other: 100 };
+
 /** Costs whose Plan totals 5600 with 150 a night for 8 Days: 1050 + 1500 + 1000 + 1300 + 500 + 250. */
 export const COSTS_TOTALLING_5600: CostsByCategory = { Food: 1500, Transportation: 1000, Activities: 1300, Shopping: 500, Other: 250 };

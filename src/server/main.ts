@@ -37,6 +37,7 @@ const app = await buildApp({
   db,
   clock: systemClock,
   email: emailServiceFor(config),
+  emailFrom: config.EMAIL_FROM,
   ai: aiServiceFor(config),
   planSettings: {
     timeoutMs: config.AI_TIMEOUT_MS,
@@ -47,6 +48,8 @@ const app = await buildApp({
   },
   breachedPasswords: loadBundledBreachedPasswordChecker(),
   appBaseUrl: config.APP_BASE_URL,
+  timezone: config.APP_TIMEZONE,
+  reminderCheckEveryMs: config.REMINDER_CHECK_INTERVAL_MS,
   cookieSecure: config.COOKIE_SECURE,
   authRateLimitPerMinute: config.AUTH_RATE_LIMIT_PER_MINUTE,
   webRoot: resolve('dist/web'),

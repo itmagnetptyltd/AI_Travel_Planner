@@ -10,6 +10,8 @@ import { aiUsageLimitsSchema } from '../../shared/ai-limits';
 import { destinationInputSchema, destinationUpdateSchema } from '../../shared/destination-schemas';
 import type { AiRecordService } from '../plans/ai-record-service';
 import type { AiUsageLimitService } from '../plans/ai-usage-limit-service';
+import { notificationSettingsSchema } from '../../shared/notification-schemas';
+import type { NotificationSettingsService } from '../notifications/notification-settings';
 import { accountActions, type AdminAccountService } from './admin-account-service';
 import { requireAdministrator } from './require-administrator';
 
@@ -30,6 +32,7 @@ export interface AdminRouteDeps {
   readonly destinations: DestinationService;
   readonly aiLimits: AiUsageLimitService;
   readonly aiRecords: AiRecordService;
+  readonly notificationSettings: NotificationSettingsService;
   /** Filled with every route registered here, so a test can prove each one is guarded. */
   readonly registeredRoutes: AdminRoute[];
 }
@@ -71,6 +74,7 @@ export async function adminRoutes(app: FastifyInstance, deps: AdminRouteDeps): P
     registerAccountRoutes(scope, deps);
     registerDestinationRoutes(scope, deps);
     registerAiRoutes(scope, deps);
+    registerNotificationRoutes(scope, deps);
   });
 }
 
@@ -168,4 +172,14 @@ function registerAiRoutes(scope: FastifyInstance, deps: AdminRouteDeps): void {
   scope.get<{ Params: IdParams }>('/api/admin/ai-requests/:id', async (request, reply) =>
     aiRecords.viewForAdmin(request.accountId ?? '', request.params.id) ?? notFound(reply, 'AI request'),
   );
+}
+
+/** Which emails are switched on for everyone. A switch that is off overrides a Traveler's own (REQ-TRV-060). */
+function registerNotificationRoutes(scope: FastifyInstance, deps: AdminRouteDeps): void {
+  scope.get('/api/admin/notification-settings', async () => deps.notificationSettings.read());
+
+  scope.put('/api/admin/notification-settings', async (request, reply) => {
+    const body = await parseBody(notificationSettingsSchema, request.body, reply);
+    return body.ok ? deps.notificationSettings.update(body.value) : undefined;
+  });
 }

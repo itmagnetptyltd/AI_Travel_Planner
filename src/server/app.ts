@@ -7,7 +7,9 @@ import fastifyStatic from '@fastify/static';
 import type { Clock } from './clock';
 import type { TrvDatabase } from './db/client';
 import type { AiService } from './ai/ai-service';
-import type { EmailService } from './email/email-service';
+import { withSender, withSendTimeout, type EmailService } from './email/email-service';
+import { loggableFailure } from './email/mail-failure';
+import { loggerFor } from './http/logging';
 import type { BreachedPasswordChecker } from './accounts/breached-password-checker';
 import { createAccountService } from './accounts/account-service';
 import { createSessionService } from './accounts/session-service';
@@ -29,29 +31,46 @@ import { createChatStore } from './chat/chat-store';
 import { createChatService } from './chat/chat-service';
 import { chatRoutes } from './chat/chat-routes';
 import { createAiUsageLimitService } from './plans/ai-usage-limit-service';
+import { createNotificationServices } from './notifications/notification-services';
+import { scheduleReminderChecks } from './notifications/reminder-service';
+import { shareRoutes } from './notifications/share-routes';
 import { createPlanService, type PlanGenerationSettings } from './plans/plan-service';
 import { createPlanStore } from './plans/plan-store';
 
 const AI_TEXT_PURGE_INTERVAL_MS = 60 * 60 * 1000;
 const TRIP_PURGE_INTERVAL_MS = 60 * 60 * 1000;
+/** How long to wait for the mail service before giving up on one email. */
+const DEFAULT_EMAIL_TIMEOUT_MS = 15_000;
 
 export interface AppDeps {
   readonly db: TrvDatabase;
   readonly clock: Clock;
   readonly email: EmailService;
+  /** The address every email is sent from, stated on each message. */
+  readonly emailFrom: string;
   readonly ai: AiService;
   readonly planSettings: PlanGenerationSettings;
   readonly breachedPasswords: BreachedPasswordChecker;
   readonly appBaseUrl: string;
+  /** The timezone Trip reminders are timed in (09:00 here, three days before a Trip starts). */
+  readonly timezone: string;
+  /** How often to check for due reminders. */
+  readonly reminderCheckEveryMs: number;
   readonly cookieSecure: boolean;
   readonly authRateLimitPerMinute: number;
   /** Directory of the built web app. Omitted in API tests. */
   readonly webRoot?: string;
   readonly logger?: boolean;
+  /** Where log lines go instead of the process's output. Given only by tests. */
+  readonly logStream?: { write(line: string): void };
+  readonly emailTimeoutMs?: number;
 }
 
+const statusCodeOf = (error: unknown): unknown =>
+  typeof error === 'object' && error !== null && 'statusCode' in error ? error.statusCode : undefined;
+
 export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
-  const app = Fastify({ logger: deps.logger ?? false });
+  const app = Fastify({ logger: loggerFor(deps) });
   await app.register(cookie);
   await app.register(helmet, {
     contentSecurityPolicy: { directives: { defaultSrc: ["'self'"] } },
@@ -59,14 +78,19 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(rateLimit, { global: false });
 
   app.setErrorHandler(async (error, request, reply) => {
+    // The rate limiter refuses by throwing; that is the caller going too fast, not the server failing.
+    if (statusCodeOf(error) === 429) {
+      return reply.code(429).send({ code: 'RATE_LIMITED', message: 'Too many requests. Wait a minute and try again.' });
+    }
     request.log.error({ err: error }, 'Unhandled error');
     await reply.code(500).send({ code: 'INTERNAL_ERROR', correlationId: request.id });
   });
 
+  const email = withSendTimeout(withSender(deps.email, deps.emailFrom), deps.emailTimeoutMs ?? DEFAULT_EMAIL_TIMEOUT_MS);
   const accounts = createAccountService({
     db: deps.db,
     clock: deps.clock,
-    email: deps.email,
+    email,
     breachedPasswords: deps.breachedPasswords,
     appBaseUrl: deps.appBaseUrl,
   });
@@ -91,6 +115,17 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   const planEditor = createPlanEditorService({ trips, store: planStore });
   const chatStore = createChatStore({ db: deps.db, clock: deps.clock });
   const chat = createChatService({ ...aiDeps, chat: chatStore });
+  const { settings: notificationSettings, notifications, reminders, shares } = createNotificationServices({
+    db: deps.db,
+    clock: deps.clock,
+    email,
+    appBaseUrl: deps.appBaseUrl,
+    timezone: deps.timezone,
+    accounts,
+    trips,
+    store: planStore,
+    onError: (error, what) => app.log.error({ err: loggableFailure(error) }, what),
+  });
   const adminAccounts = createAdminAccountService({ db: deps.db, clock: deps.clock, sessions });
   const stopPurging = scheduleTextPurge(aiRecords, AI_TEXT_PURGE_INTERVAL_MS, (error) =>
     app.log.error({ err: error }, 'Clearing expired AI text failed'),
@@ -98,9 +133,13 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   const stopPurgingTrips = schedulePurge(() => trips.purgeExpired(), TRIP_PURGE_INTERVAL_MS, (error) =>
     app.log.error({ err: error }, 'Removing expired deleted Trips failed'),
   );
+  const reminderSchedule = scheduleReminderChecks(() => reminders.runCheck(), deps.reminderCheckEveryMs, (error) =>
+    app.log.error({ err: loggableFailure(error) }, 'The reminder check failed'),
+  );
   app.addHook('onClose', async () => {
     stopPurging();
     stopPurgingTrips();
+    await reminderSchedule.stop();
   });
   const registeredAdminRoutes: AdminRoute[] = [];
   app.decorate('adminRoutes', registeredAdminRoutes);
@@ -113,15 +152,19 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     authRateLimitPerMinute: deps.authRateLimitPerMinute,
   });
   await profileRoutes(app, { accounts, sessions });
-  await tripRoutes(app, { accounts, sessions, trips, tripChanges });
-  await planRoutes(app, { sessions, plans, regeneration: planRegeneration, trips, store: planStore });
+  await tripRoutes(app, { accounts, sessions, trips, tripChanges, notifications });
+  await planRoutes(app, { sessions, plans, regeneration: planRegeneration, trips, store: planStore, notifications });
   await planEditRoutes(app, { sessions, editor: planEditor });
   await chatRoutes(app, { sessions, chat });
+  await shareRoutes(app, { accounts, sessions, shares, rateLimitPerMinute: deps.authRateLimitPerMinute });
   await destinationRoutes(app, { sessions, destinations });
-  await adminRoutes(app, { accounts, sessions, adminAccounts, destinations, aiLimits, aiRecords, registeredRoutes: registeredAdminRoutes });
+  await adminRoutes(app, { accounts, sessions, adminAccounts, destinations, aiLimits, aiRecords, notificationSettings, registeredRoutes: registeredAdminRoutes });
 
   if (deps.webRoot && existsSync(deps.webRoot)) {
     await serveWebApp(app, deps.webRoot);
+  } else {
+    // Without the web app, an unknown address is answered without echoing the address back or into the log.
+    app.setNotFoundHandler(async (_request, reply) => reply.code(404).send({ code: 'NOT_FOUND' }));
   }
   return app;
 }

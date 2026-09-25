@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { CURRENCIES } from './currencies';
 import { FOOD_PREFERENCES } from './food-preferences';
+import { notificationSettingsSchema } from './notification-schemas';
 import { TRAVEL_STYLES } from './travel-styles';
 
 export const DISPLAY_NAME_MAX_LENGTH = 100;
@@ -11,6 +12,7 @@ export const profileUpdateSchema = z
     preferredCurrency: z.enum(CURRENCIES).nullable(),
     defaultTravelStyle: z.enum(TRAVEL_STYLES).nullable(),
     foodPreference: z.enum(FOOD_PREFERENCES).nullable(),
+    notifications: notificationSettingsSchema,
   })
   .partial()
   .strict();

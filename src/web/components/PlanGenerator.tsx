@@ -6,6 +6,7 @@ import { ChatBox } from './ChatBox';
 import { ConfirmRegeneration } from './ConfirmRegeneration';
 import { PlanDisplay } from './PlanDisplay';
 import { PlanVersions } from './PlanVersions';
+import { SharePanel } from './SharePanel';
 import { BUSY_MESSAGES, usePlanPanel } from './use-plan-panel';
 
 /**
@@ -40,6 +41,7 @@ export function PlanGenerator({ trip, onPlanSaved }: { readonly trip: TripView; 
       ) : null}
       {panel.plan ? <PlanDisplay plan={panel.plan} actions={planActions} /> : null}
       {panel.plan ? <BudgetPanel tripId={trip.id} planVersion={panel.plan.version} /> : null}
+      {panel.plan ? <SharePanel tripId={trip.id} isBusy={planActions.isBusy} /> : null}
       {panel.plan && versions.length > 0 ? (
         <PlanVersions versions={versions} currentVersion={panel.plan.version} isBusy={planActions.isBusy} onRestore={restore} />
       ) : null}

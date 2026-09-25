@@ -5,6 +5,7 @@ import { AdminAiRequestsPage } from './pages/admin/AdminAiRequestsPage';
 import { AdminAiUsageLimitsPage } from './pages/admin/AdminAiUsageLimitsPage';
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 import { AdminDestinationsPage } from './pages/admin/AdminDestinationsPage';
+import { AdminNotificationsPage } from './pages/admin/AdminNotificationsPage';
 import { AdminUserPage } from './pages/admin/AdminUserPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 import { DestinationDetailPage } from './pages/DestinationDetailPage';
@@ -14,6 +15,7 @@ import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { LoginPage } from './pages/LoginPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { RegisterPage } from './pages/RegisterPage';
+import { SharedPlanPage } from './pages/SharedPlanPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { TripFormPage } from './pages/TripFormPage';
 import { TripPage } from './pages/TripPage';
@@ -29,6 +31,7 @@ export function App() {
         <Route path="/confirm-email" element={<ConfirmEmailPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/shared/:token" element={<SharedPlanPage />} />
         <Route path="/trips" element={<RequireSession><TripsPage /></RequireSession>} />
         <Route path="/trips/new" element={<RequireSession><TripFormPage /></RequireSession>} />
         <Route path="/trips/:id" element={<RequireSession><TripPage /></RequireSession>} />
@@ -41,6 +44,7 @@ export function App() {
         <Route path="/admin/users/:id" element={<RequireAdministrator><AdminUserPage /></RequireAdministrator>} />
         <Route path="/admin/destinations" element={<RequireAdministrator><AdminDestinationsPage /></RequireAdministrator>} />
         <Route path="/admin/ai-usage-limits" element={<RequireAdministrator><AdminAiUsageLimitsPage /></RequireAdministrator>} />
+        <Route path="/admin/notification-settings" element={<RequireAdministrator><AdminNotificationsPage /></RequireAdministrator>} />
         <Route path="/admin/ai-requests" element={<RequireAdministrator><AdminAiRequestsPage /></RequireAdministrator>} />
         <Route path="/admin/ai-requests/:id" element={<RequireAdministrator><AdminAiRequestPage /></RequireAdministrator>} />
         <Route path="*" element={<Navigate to="/trips" replace />} />

@@ -22,10 +22,16 @@ export async function aTravelerWithATrip(
     readonly now?: Date;
     readonly databasePath?: string;
     readonly trip?: Parameters<typeof aTripInput>[1];
+    readonly logStream?: { write(line: string): void };
+    readonly authRateLimitPerMinute?: number;
+    readonly emailTimeoutMs?: number;
   } = {},
 ): Promise<TravelerWithTrip> {
   const testApp = await buildTestApp({
     now: options.now ?? TODAY,
+    ...(options.logStream === undefined ? {} : { logStream: options.logStream }),
+    ...(options.authRateLimitPerMinute === undefined ? {} : { authRateLimitPerMinute: options.authRateLimitPerMinute }),
+    ...(options.emailTimeoutMs === undefined ? {} : { emailTimeoutMs: options.emailTimeoutMs }),
     ...(options.databasePath === undefined ? {} : { databasePath: options.databasePath }),
   });
   const destinationId = await anAddedDestination(testApp, { name: 'Kyoto', country: 'Japan' });
