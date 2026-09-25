@@ -1,6 +1,18 @@
 import { z } from 'zod';
 import { CURRENCIES, type Currency } from './currencies';
-import { TRAVEL_STYLES, type TravelStyle } from './travel-styles';
+import type { FoodPreference } from './food-preferences';
+import type { TravelStyle } from './travel-styles';
+import {
+  accommodationSchema,
+  foodPreferencesSchema,
+  interestsSchema,
+  MAX_TRAVEL_STYLES,
+  transportationSchema,
+  travelStylesSchema,
+  type AccommodationPreferences,
+  type Interest,
+  type Transportation,
+} from './trip-preferences';
 
 /** The longest Trip the client agreed (ANSWERS.md, "Trip length and past dates"). */
 export const TRIP_MAX_DAYS = 14;
@@ -11,7 +23,7 @@ export const TRIP_LIMITS = Object.freeze({
   maxAdults: 20,
   maxChildren: 20,
   maxBudget: 10_000_000,
-  maxTravelStyles: 3,
+  maxTravelStyles: MAX_TRAVEL_STYLES,
 });
 
 export const TRIP_STATUSES = ['Draft', 'Planned'] as const;
@@ -39,7 +51,11 @@ const tripFields = {
   children: z.number().int().min(0).max(TRIP_LIMITS.maxChildren).optional(),
   budget: z.number().int().min(0).max(TRIP_LIMITS.maxBudget),
   currency: z.enum(CURRENCIES),
-  travelStyles: z.array(z.enum(TRAVEL_STYLES)).max(TRIP_LIMITS.maxTravelStyles).optional(),
+  travelStyles: travelStylesSchema.optional(),
+  interests: interestsSchema.optional(),
+  foodPreferences: foodPreferencesSchema.optional(),
+  transportation: transportationSchema.optional(),
+  accommodation: accommodationSchema.optional(),
   // Accepted so a caller who sends it is not refused, and never read: the number of
   // travelers is always adults plus children (ANSWERS.md, "Number of travelers").
   numberOfTravelers: z.unknown().optional(),
@@ -74,5 +90,9 @@ export interface TripView {
   readonly budget: number;
   readonly currency: Currency;
   readonly travelStyles: readonly TravelStyle[];
+  readonly interests: readonly Interest[];
+  readonly foodPreferences: readonly FoodPreference[];
+  readonly transportation: readonly Transportation[];
+  readonly accommodation: AccommodationPreferences | null;
   readonly status: TripStatus;
 }

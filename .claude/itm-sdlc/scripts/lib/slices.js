@@ -147,6 +147,13 @@ function unfinishedIds(slice) {
     .map((m) => m.id);
 }
 
+function idsByStatus(slice, status) {
+  if (!Array.isArray(slice.members)) return [];
+  return slice.members
+    .filter((m) => !m.missing && m.status === status)
+    .map((m) => m.id);
+}
+
 function nextAction(slice, previous) {
   if (slice.missing.length > 0) {
     return `${slice.missing.join(", ")} not in the requirement record.`;
@@ -166,11 +173,24 @@ function nextAction(slice, previous) {
         return `Wait. Finish slice ${previous.id} first.`;
       }
       return "/feature-plan then /tdd.";
-    case "in_progress":
-      if (named) {
-        return `/tdd ${named}, then /close-slice. Not Done until ${remaining} more are verified.`;
+    case "in_progress": {
+      const started = idsByStatus(slice, "in_progress");
+      const notStarted = idsByStatus(slice, "agreed");
+      const tail = `Not Done until ${remaining} more are verified.`;
+      if (started.length > 0 && notStarted.length > 0) {
+        return `/tdd ${notStarted.join(", ")}, then /close-slice ${started.join(", ")}. ${tail}`;
       }
-      return `/tdd the remaining ${remaining} id(s), then /close-slice. Not Done until ${remaining} more are verified.`;
+      if (started.length > 0) {
+        return `/close-slice ${started.join(", ")}. ${tail}`;
+      }
+      if (notStarted.length > 0) {
+        return `/tdd ${notStarted.join(", ")}, then /close-slice. ${tail}`;
+      }
+      if (named) {
+        return `/tdd ${named}, then /close-slice. ${tail}`;
+      }
+      return `/tdd the remaining ${remaining} id(s), then /close-slice. ${tail}`;
+    }
     default:
       return "";
   }

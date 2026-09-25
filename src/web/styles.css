@@ -15,3 +15,6 @@ button { padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer; }
 :focus-visible { outline: 3px solid #2d5b9a; outline-offset: 2px; }
 .plan-notice { background: #fff8e1; border-left: 4px solid #b26a00; padding: 0.75rem 1rem; }
 .ai-text { white-space: pre-wrap; word-break: break-word; background: #f5f5f5; padding: 0.75rem; }
+.choice-group { border: 1px solid #ccc; margin: 0 0 1rem; padding: 0.5rem 0.75rem; }
+.choice-group legend { padding: 0 0.25rem; font-weight: 600; }
+.choice { display: inline-flex; align-items: center; gap: 0.35rem; margin: 0.15rem 1rem 0.15rem 0; }

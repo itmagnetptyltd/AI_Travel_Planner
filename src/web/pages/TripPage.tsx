@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { TripView } from '../../shared/trip-schemas';
 import { api } from '../api-client';
 import { PlanGenerator } from '../components/PlanGenerator';
+import { PreferenceSummary } from '../components/PreferenceSummary';
 import { travelersLabel } from './trip-labels';
 
 type TripState =
@@ -60,7 +61,7 @@ export function TripPage() {
         <dt>Status</dt>
         <dd>{shown.status}</dd>
       </dl>
-      <p>{`Travel style: ${shown.travelStyles.length === 0 ? 'Not set' : shown.travelStyles.join(', ')}`}</p>
+      <PreferenceSummary trip={shown} />
       <PlanGenerator key={shown.id} tripId={shown.id} onPlanSaved={reloadTrip} />
       <Link to={`/trips/${encodeURIComponent(shown.id)}/edit`}>Edit</Link>
       {isConfirmingDelete ? (

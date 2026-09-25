@@ -2,7 +2,9 @@ import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqli
 import { AI_REQUEST_KINDS, AI_REQUEST_STATUSES } from '../../shared/ai-limits';
 import { CURRENCIES } from '../../shared/currencies';
 import { PLAN_VERSION_SOURCES } from '../../shared/plan-schemas';
+import type { FoodPreference } from '../../shared/food-preferences';
 import type { TravelStyle } from '../../shared/travel-styles';
+import type { AccommodationPreferences, Interest, Transportation } from '../../shared/trip-preferences';
 import { TRIP_STATUSES } from '../../shared/trip-schemas';
 
 export const accounts = sqliteTable('accounts', {
@@ -74,6 +76,10 @@ export const trips = sqliteTable(
     budget: integer('budget').notNull(),
     currency: text('currency', { enum: CURRENCIES }).notNull(),
     travelStyles: text('travel_styles', { mode: 'json' }).$type<TravelStyle[]>().notNull(),
+    interests: text('interests', { mode: 'json' }).$type<Interest[]>().notNull().default([]),
+    foodPreferences: text('food_preferences', { mode: 'json' }).$type<FoodPreference[]>().notNull().default([]),
+    transportation: text('transportation', { mode: 'json' }).$type<Transportation[]>().notNull().default([]),
+    accommodation: text('accommodation', { mode: 'json' }).$type<AccommodationPreferences | null>(),
     status: text('status', { enum: TRIP_STATUSES }).notNull(),
     deletedAt: integer('deleted_at', { mode: 'timestamp_ms' }),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),

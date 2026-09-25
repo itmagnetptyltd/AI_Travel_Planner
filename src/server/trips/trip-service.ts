@@ -10,6 +10,7 @@ import {
   type TripUpdate,
   type TripView,
 } from '../../shared/trip-schemas';
+import { ACCOMMODATION_FIELDS, type AccommodationPreferences } from '../../shared/trip-preferences';
 
 export type TripField = 'destinationId' | 'startDate' | 'endDate';
 
@@ -63,6 +64,10 @@ export function createTripService(deps: { readonly db: TrvDatabase; readonly clo
         ownerAccountId: ownerId,
         children: input.children ?? 0,
         travelStyles: [...(input.travelStyles ?? [])],
+        interests: [...(input.interests ?? [])],
+        foodPreferences: [...(input.foodPreferences ?? [])],
+        transportation: [...(input.transportation ?? [])],
+        accommodation: accommodationOf(input.accommodation),
         status: 'Draft',
         deletedAt: null,
         createdAt: now,
@@ -135,7 +140,10 @@ function changeProblem(
 }
 
 /** Copies only the Trip fields, by name — never the caller's whole object, and never numberOfTravelers. */
-function pickTripFields(input: TripInput): Omit<TripRow, 'id' | 'ownerAccountId' | 'children' | 'travelStyles' | 'status' | 'deletedAt' | 'createdAt' | 'updatedAt'>;
+type ServerSetFields = 'id' | 'ownerAccountId' | 'children' | 'status' | 'deletedAt' | 'createdAt' | 'updatedAt';
+type PreferenceFields = 'travelStyles' | 'interests' | 'foodPreferences' | 'transportation' | 'accommodation';
+
+function pickTripFields(input: TripInput): Omit<TripRow, ServerSetFields | PreferenceFields>;
 function pickTripFields(input: TripUpdate): Partial<TripRow>;
 function pickTripFields(input: TripUpdate): Partial<TripRow> {
   return {
@@ -148,7 +156,24 @@ function pickTripFields(input: TripUpdate): Partial<TripRow> {
     ...(input.budget !== undefined ? { budget: input.budget } : {}),
     ...(input.currency !== undefined ? { currency: input.currency } : {}),
     ...(input.travelStyles !== undefined ? { travelStyles: [...input.travelStyles] } : {}),
+    ...(input.interests !== undefined ? { interests: [...input.interests] } : {}),
+    ...(input.foodPreferences !== undefined ? { foodPreferences: [...input.foodPreferences] } : {}),
+    ...(input.transportation !== undefined ? { transportation: [...input.transportation] } : {}),
+    ...(input.accommodation !== undefined ? { accommodation: accommodationOf(input.accommodation) } : {}),
   };
+}
+
+/**
+ * Copies only the accommodation values that were given, by name. A value that is blank is not given, and
+ * nothing given at all, like null, is stored as null, so "no accommodation preferences" has one form.
+ */
+function accommodationOf(input: TripInput['accommodation']): AccommodationPreferences | null {
+  if (!input) return null;
+  const given = ACCOMMODATION_FIELDS.flatMap((field) => {
+    const value = input[field]?.trim();
+    return value ? [[field, value] as const] : [];
+  });
+  return given.length === 0 ? null : Object.fromEntries(given);
 }
 
 function destinationOf(db: TrvDatabase, id: string): TripView['destination'] {
@@ -176,6 +201,10 @@ function toView(row: TripRow, destination: TripView['destination']): TripView {
     budget: row.budget,
     currency: row.currency,
     travelStyles: row.travelStyles,
+    interests: row.interests,
+    foodPreferences: row.foodPreferences,
+    transportation: row.transportation,
+    accommodation: row.accommodation,
     status: row.status,
   };
 }

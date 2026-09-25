@@ -8,7 +8,7 @@ import type { TripService } from '../trips/trip-service';
 import type { SavedPlan } from '../../shared/plan-schemas';
 import type { TripView } from '../../shared/trip-schemas';
 import type { AiUsageLimitService } from './ai-usage-limit-service';
-import { buildPlanPrompt, type PlanPrompt } from './plan-prompt';
+import { buildPlanPrompt, preferencesForPrompt, type PlanPrompt } from './plan-prompt';
 import { parsePlanReply } from './plan-reply';
 import type { Executor, PlanStore } from './plan-store';
 
@@ -60,6 +60,13 @@ function promptFor(trip: TripView, destination: Destination, destinationTextMaxC
     children: trip.children,
     budget: trip.budget,
     currency: trip.currency,
+    preferences: preferencesForPrompt({
+      travelStyles: trip.travelStyles,
+      interests: trip.interests,
+      foodPreferences: trip.foodPreferences,
+      transportation: trip.transportation,
+      accommodation: trip.accommodation,
+    }),
     destinationTextMaxChars,
   });
 }

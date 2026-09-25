@@ -11,7 +11,11 @@ import {
   valuesFromTrip,
 } from './trip-form-state';
 
-type ProfileDefaults = { readonly preferredCurrency: string | null; readonly defaultTravelStyle: string | null };
+type ProfileDefaults = {
+  readonly preferredCurrency: string | null;
+  readonly defaultTravelStyle: string | null;
+  readonly foodPreference: string | null;
+};
 
 /** Creates a Trip at /trips/new, or edits one at /trips/:id/edit. */
 export function TripFormPage() {
