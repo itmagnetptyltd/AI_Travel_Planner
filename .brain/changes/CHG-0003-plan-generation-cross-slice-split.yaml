@@ -1,0 +1,61 @@
+id: CHG-0003
+raised: 2026-09-25
+stream: discovered_constraint
+source: "Developer (Kartik Chandra Biswas), session 2026-09-25: invoked /change-record after /tdd on REQ-TRV-029, 030 and 033 stopped at four criteria it could not test"
+raw: "/change-record"
+context: >-
+  Building slice 4 (AI Plan generation) found that 4 of the acceptance criteria
+  on REQ-TRV-029, 030 and 033 can only be tested once later slices exist. Two
+  need a saved Plan, regeneration, or editing, removing and moving Activities
+  (slices 5 and 7). Two need the chat (slice 8). As with CHG-0001 and CHG-0002,
+  what changed is the build order in slices.yaml, not the client's scope. Left
+  as they were, the three requirements would either reach `verified` with
+  criteria untested, or hold slice 4 open while the slice gate blocks slice 5.
+  Every criterion moves word for word to a new requirement in the slice that can
+  test it. No criterion's wording changes. The remaining criteria on the three
+  requirements are built and tested in slice 4.
+affects: [REQ-TRV-029, REQ-TRV-030, REQ-TRV-033]
+creates: [REQ-TRV-102, REQ-TRV-103, REQ-TRV-104, REQ-TRV-105]
+moves:
+  - from: REQ-TRV-029 v1 criterion 1 (an AI error on regenerating a Trip with a saved Plan leaves that Plan displayed)
+    to: REQ-TRV-102
+    slice: 7
+  - from: REQ-TRV-030 v1 criterion 2 (edit, remove and move Activities while the AI does not respond)
+    to: REQ-TRV-103
+    slice: 7
+  - from: REQ-TRV-029 v1 criterion 2 (an AI error on a chat message shows the unavailable message in the chat)
+    to: REQ-TRV-104
+    slice: 8
+  - from: REQ-TRV-033 v1 criterion 2 (a chat request does not contain the account email address)
+    to: REQ-TRV-105
+    slice: 8
+analysis:
+  dependants:
+    - REQ-TRV-030   # on REQ-TRV-029; also affected itself
+  tests_invalidated: 19   # annotations pinned to v1 of REQ-TRV-029, 030 and 033, in 5 files
+  estimate: "No build effort added or removed. The same criteria are built, in the slices that can test them. The 19 annotations are re-pinned from v1 to v2 when slice 4 is closed."
+  test_files_to_repin:
+    - tests/api/plans.http.spec.ts
+    - tests/unit/plan-service.test.ts
+    - tests/unit/plan-view-state.test.ts
+    - tests/unit/scripted-ai-service.test.ts
+    - e2e/plan-generation.spec.ts
+  build_note: >-
+    Slice 4 already builds the AI fallback message (REQ-TRV-029 criterion 3),
+    the Trip list and Trip page loading while the AI does not respond
+    (REQ-TRV-030 criterion 1), and the account email staying out of a Plan
+    request (REQ-TRV-033 criterion 1). Slice 7 and 8 add the same behaviour for
+    regeneration, editing and chat.
+decision: absorbed
+commercial: >-
+  Absorbed, no charge: no criterion's wording changed and no scope was added or
+  removed. Decided by the developer 2026-09-25 (recorded in ANSWERS.md). The
+  client is to be informed of the regrouping in the next report.
+outcome:
+  - REQ-TRV-029: v2
+  - REQ-TRV-030: v2
+  - REQ-TRV-033: v2
+  - REQ-TRV-102: v1 (new, slice 7)
+  - REQ-TRV-103: v1 (new, slice 7)
+  - REQ-TRV-104: v1 (new, slice 8)
+  - REQ-TRV-105: v1 (new, slice 8)
