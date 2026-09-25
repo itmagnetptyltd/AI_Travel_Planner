@@ -38,6 +38,12 @@ export async function tripRoutes(
     return replyWith(reply, trips.create(ownerOf(request), body.value), 201);
   });
 
+  app.get('/api/trips/deleted', { preHandler: loggedIn }, async (request) => ({ trips: trips.listDeleted(ownerOf(request)) }));
+
+  app.post<{ Params: IdParams }>('/api/trips/:id/restore', { preHandler: loggedIn }, async (request, reply) =>
+    replyWith(reply, trips.restore(ownerOf(request), request.params.id), 200),
+  );
+
   app.get<{ Params: IdParams }>('/api/trips/:id', { preHandler: loggedIn }, async (request, reply) => {
     const trip = trips.getForOwner(ownerOf(request), request.params.id);
     return trip ?? tripNotFound(reply);

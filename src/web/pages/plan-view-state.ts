@@ -77,6 +77,7 @@ const ORIGINS: Readonly<Record<PlanVersionSummary['source'], string>> = {
   edit: 'edited by you',
   'day-regeneration': 'one Day regenerated',
   'trip-change': 'changed with the Trip',
+  chat: 'changed by a chat suggestion',
 };
 
 export function versionDetail(summary: PlanVersionSummary, isCurrent: boolean): string {

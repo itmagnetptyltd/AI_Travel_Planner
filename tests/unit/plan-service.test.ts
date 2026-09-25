@@ -264,7 +264,7 @@ describe('the daily generation limit', () => {
 
     const result = await plans.generate(ownerId, aTrip().id);
 
-    expect(result).toEqual({ ok: false, error: 'limit-reached', limit: 20, resetsAt: new Date('2026-09-24T00:00:00Z') });
+    expect(result).toEqual({ ok: false, error: 'limit-reached', scope: 'plan', limit: 20, resetsAt: new Date('2026-09-24T00:00:00Z') });
     expect(ai.requests).toHaveLength(0);
   });
 
@@ -306,7 +306,7 @@ describe('the daily generation limit', () => {
 
     const sixth = await plans.generate(ownerId, trip.id);
 
-    expect(sixth).toEqual({ ok: false, error: 'limit-reached', limit: 5, resetsAt: new Date('2026-09-24T00:00:00Z') });
+    expect(sixth).toEqual({ ok: false, error: 'limit-reached', scope: 'plan', limit: 5, resetsAt: new Date('2026-09-24T00:00:00Z') });
   });
 
   // @covers REQ-TRV-026@v1

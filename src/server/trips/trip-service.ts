@@ -1,11 +1,13 @@
 import { randomUUID } from 'node:crypto';
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, isNotNull, isNull, lte } from 'drizzle-orm';
 import type { Clock } from '../clock';
 import type { TrvDatabase } from '../db/client';
 import { destinations, trips } from '../db/schema';
 import {
   areTripDatesValid,
+  TRIP_RESTORE_DAYS,
   tripDayCount,
+  type DeletedTrip,
   type TripInput,
   type TripUpdate,
   type TripView,
@@ -30,12 +32,19 @@ export interface TripService {
   update(ownerId: string, id: string, change: TripUpdate): TripResult;
   /** Soft delete: the row stays, so the Trip still holds its Destination. False when nothing was deleted. */
   softDelete(ownerId: string, id: string): boolean;
+  /** The owner's Trips deleted less than 30 days ago, most recently deleted first. */
+  listDeleted(ownerId: string): readonly DeletedTrip[];
+  /** Brings a Trip deleted less than 30 days ago back, with its Plan and chat. Anything else reads as not found. */
+  restore(ownerId: string, id: string): TripResult;
+  /** Removes for good every Trip deleted 30 days ago or more, with its Plans and chat. Returns how many. */
+  purgeExpired(): number;
 }
 
 type TripRow = typeof trips.$inferSelect;
 
 const invalid = (field: TripField): TripResult => ({ ok: false, error: 'invalid', field });
 const NOT_FOUND: TripResult = { ok: false, error: 'not-found' };
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function createTripService(deps: { readonly db: TrvDatabase; readonly clock: Clock }): TripService {
   const { db, clock } = deps;
@@ -54,6 +63,14 @@ export function createTripService(deps: { readonly db: TrvDatabase; readonly clo
       .where(and(eq(trips.id, id), eq(trips.ownerAccountId, ownerId), isNull(trips.deletedAt)))
       .get();
   const view = (row: TripRow): TripView => toView(row, destinationOf(db, row.destinationId));
+  /** A Trip deleted before this can no longer be restored, and is removed for good. */
+  const restoreCutoff = () => new Date(clock.now().getTime() - TRIP_RESTORE_DAYS * DAY_MS);
+  const restorableRow = (ownerId: string, id: string) =>
+    db
+      .select()
+      .from(trips)
+      .where(and(eq(trips.id, id), eq(trips.ownerAccountId, ownerId), gt(trips.deletedAt, restoreCutoff())))
+      .get();
   const preview: TripService['preview'] = (ownerId, id, change) => {
     const existing = ownedRow(ownerId, id);
     if (!existing) return NOT_FOUND;
@@ -111,6 +128,31 @@ export function createTripService(deps: { readonly db: TrvDatabase; readonly clo
         .run();
       const updated = ownedRow(ownerId, id);
       return updated ? { ok: true, trip: view(updated) } : NOT_FOUND;
+    },
+
+    listDeleted(ownerId) {
+      return db
+        .select()
+        .from(trips)
+        .where(and(eq(trips.ownerAccountId, ownerId), gt(trips.deletedAt, restoreCutoff())))
+        .orderBy(desc(trips.deletedAt))
+        .all()
+        .flatMap((row) => {
+          if (!row.deletedAt) return [];
+          const purgesAt = new Date(row.deletedAt.getTime() + TRIP_RESTORE_DAYS * DAY_MS).toISOString();
+          return [{ id: row.id, name: row.name, destination: destinationOf(db, row.destinationId), deletedAt: row.deletedAt.toISOString(), purgesAt }];
+        });
+    },
+
+    restore(ownerId, id) {
+      if (!restorableRow(ownerId, id)) return NOT_FOUND;
+      db.update(trips).set({ deletedAt: null, updatedAt: clock.now() }).where(eq(trips.id, id)).run();
+      const restored = ownedRow(ownerId, id);
+      return restored ? { ok: true, trip: view(restored) } : NOT_FOUND;
+    },
+
+    purgeExpired() {
+      return db.delete(trips).where(and(isNotNull(trips.deletedAt), lte(trips.deletedAt, restoreCutoff()))).run().changes;
     },
 
     softDelete(ownerId, id) {

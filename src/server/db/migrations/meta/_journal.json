@@ -43,6 +43,13 @@
       "when": 1790317045105,
       "tag": "0005_trip_preferences",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1790323594886,
+      "tag": "0006_chat_messages",
+      "breakpoints": true
     }
   ]
 }

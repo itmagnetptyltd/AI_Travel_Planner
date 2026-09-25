@@ -11,6 +11,13 @@ export interface AiScript {
   readonly dayCount?: number;
   /** Put in front of every Activity title, so one generated Plan can be told from another. */
   readonly label?: string;
+  /** What a chat message gets back: the reply, and the Days the AI would change with their whole new Activity lists. */
+  readonly chat?: {
+    readonly reply: string;
+    readonly changes?: readonly object[];
+    /** Answer with the instructions the AI was sent, as a misbehaving AI might. */
+    readonly echoInstructions?: boolean;
+  };
 }
 
 /** Tells the e2e server's scripted AI what the next request should do. Tests run one at a time, so one file is safe. */

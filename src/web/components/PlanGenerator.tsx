@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import type { TripView } from '../../shared/trip-schemas';
 import { planBanner, planButtonLabel } from '../pages/plan-view-state';
+import { ChatBox } from './ChatBox';
 import { ConfirmRegeneration } from './ConfirmRegeneration';
 import { PlanDisplay } from './PlanDisplay';
 import { PlanVersions } from './PlanVersions';
@@ -12,30 +14,34 @@ import { BUSY_MESSAGES, usePlanPanel } from './use-plan-panel';
  * Plan by hand. `onPlanSaved` runs after a Plan is saved, so the page can show the Trip as Planned.
  */
 export function PlanGenerator({ trip, onPlanSaved }: { readonly trip: TripView; readonly onPlanSaved: () => void }) {
-  const { panel, busy, versions, loadFailure, pending, regeneratePlan, restore, cancelPending, actions } = usePlanPanel(
+  const { panel, busy, versions, loadFailure, pending, regeneratePlan, restore, cancelPending, showPlan, actions } = usePlanPanel(
     trip.id,
     onPlanSaved,
   );
+  const [isChatBusy, setIsChatBusy] = useState(false);
   const banner = panel.plan ? planBanner(panel.plan, trip) : null;
+  // Asking the chat, or deciding on what it suggested, and changing the Plan another way, never happen at once.
+  const planActions = { ...actions, isBusy: actions.isBusy || isChatBusy };
 
   return (
     <>
-      <button type="button" disabled={actions.isBusy} onClick={regeneratePlan}>
+      <button type="button" disabled={planActions.isBusy} onClick={regeneratePlan}>
         {planButtonLabel(panel.plan !== null)}
       </button>
       {busy ? <p role="status">{BUSY_MESSAGES[busy]}</p> : null}
       {panel.notice ? <p role="alert">{panel.notice.message}</p> : null}
       {loadFailure ? <p role="alert">{loadFailure}</p> : null}
-      {pending ? <ConfirmRegeneration message={pending.message} isBusy={actions.isBusy} onConfirm={() => void pending.run()} onCancel={cancelPending} /> : null}
+      {pending ? <ConfirmRegeneration message={pending.message} isBusy={planActions.isBusy} onConfirm={() => void pending.run()} onCancel={cancelPending} /> : null}
       {banner ? (
         <p role="note" className="plan-notice">
           {banner}
         </p>
       ) : null}
-      {panel.plan ? <PlanDisplay plan={panel.plan} actions={actions} /> : null}
+      {panel.plan ? <PlanDisplay plan={panel.plan} actions={planActions} /> : null}
       {panel.plan && versions.length > 0 ? (
-        <PlanVersions versions={versions} currentVersion={panel.plan.version} isBusy={actions.isBusy} onRestore={restore} />
+        <PlanVersions versions={versions} currentVersion={panel.plan.version} isBusy={planActions.isBusy} onRestore={restore} />
       ) : null}
+      {panel.plan ? <ChatBox tripId={trip.id} planVersion={panel.plan.version} isBusy={actions.isBusy} onBusyChange={setIsChatBusy} onPlanChanged={showPlan} /> : null}
     </>
   );
 }

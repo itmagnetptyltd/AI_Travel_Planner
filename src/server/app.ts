@@ -24,12 +24,16 @@ import { createDestinationService } from './destinations/destination-service';
 import { destinationRoutes } from './destinations/destination-routes';
 import { createTripService } from './trips/trip-service';
 import { createTripChangeService } from './trips/trip-change-service';
-import { createAiRecordService, scheduleTextPurge } from './plans/ai-record-service';
+import { createAiRecordService, schedulePurge, scheduleTextPurge } from './plans/ai-record-service';
+import { createChatStore } from './chat/chat-store';
+import { createChatService } from './chat/chat-service';
+import { chatRoutes } from './chat/chat-routes';
 import { createAiUsageLimitService } from './plans/ai-usage-limit-service';
 import { createPlanService, type PlanGenerationSettings } from './plans/plan-service';
 import { createPlanStore } from './plans/plan-store';
 
 const AI_TEXT_PURGE_INTERVAL_MS = 60 * 60 * 1000;
+const TRIP_PURGE_INTERVAL_MS = 60 * 60 * 1000;
 
 export interface AppDeps {
   readonly db: TrvDatabase;
@@ -85,11 +89,19 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   const planRegeneration = createPlanRegenerationService(aiDeps);
   const tripChanges = createTripChangeService({ db: deps.db, trips, store: planStore, plans });
   const planEditor = createPlanEditorService({ trips, store: planStore });
+  const chatStore = createChatStore({ db: deps.db, clock: deps.clock });
+  const chat = createChatService({ ...aiDeps, chat: chatStore });
   const adminAccounts = createAdminAccountService({ db: deps.db, clock: deps.clock, sessions });
   const stopPurging = scheduleTextPurge(aiRecords, AI_TEXT_PURGE_INTERVAL_MS, (error) =>
     app.log.error({ err: error }, 'Clearing expired AI text failed'),
   );
-  app.addHook('onClose', async () => stopPurging());
+  const stopPurgingTrips = schedulePurge(() => trips.purgeExpired(), TRIP_PURGE_INTERVAL_MS, (error) =>
+    app.log.error({ err: error }, 'Removing expired deleted Trips failed'),
+  );
+  app.addHook('onClose', async () => {
+    stopPurging();
+    stopPurgingTrips();
+  });
   const registeredAdminRoutes: AdminRoute[] = [];
   app.decorate('adminRoutes', registeredAdminRoutes);
 
@@ -104,6 +116,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await tripRoutes(app, { accounts, sessions, trips, tripChanges });
   await planRoutes(app, { sessions, plans, regeneration: planRegeneration, trips, store: planStore });
   await planEditRoutes(app, { sessions, editor: planEditor });
+  await chatRoutes(app, { sessions, chat });
   await destinationRoutes(app, { sessions, destinations });
   await adminRoutes(app, { accounts, sessions, adminAccounts, destinations, aiLimits, aiRecords, registeredRoutes: registeredAdminRoutes });
 

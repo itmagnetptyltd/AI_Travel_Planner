@@ -117,7 +117,7 @@ function asReferenceText(text: string, maxChars: number): string {
 }
 
 /** A name that sits among the instructions: no line breaks, so it cannot begin a line of its own. */
-function asOneLine(text: string): string {
+export function asOneLine(text: string): string {
   return withoutTags(toOneLine(text));
 }
 
@@ -134,7 +134,7 @@ function accommodationLines(accommodation: AccommodationPreferences | null): str
 }
 
 /** The trip facts every request carries: where, when, who, how much, and what the Traveler prefers. */
-function tripFacts(input: PlanPromptInput): string {
+export function tripFacts(input: PlanPromptInput): string {
   const { destination, preferences } = input;
   const line = (label: string, values: readonly string[]) => (values.length > 0 ? `${label}: ${asOneLine(values.join(', '))}\n` : '');
   return `Destination: ${asOneLine(destination.name)}, ${asOneLine(destination.country)}
@@ -145,7 +145,7 @@ ${line('Travel style', preferences.travelStyles)}${line('Interests', preferences
 }
 
 /** Text about the Destination, and lines the Traveler wrote, all as data the AI is told never to obey. */
-function referenceBlock(input: PlanPromptInput, extraLines: readonly string[] = []): string {
+export function referenceBlock(input: PlanPromptInput, extraLines: readonly string[] = []): string {
   const { destination, preferences } = input;
   const reference = (text: string) => asReferenceText(text, input.destinationTextMaxChars);
   const lines = [...extraLines, ...accommodationLines(preferences.accommodation)];
