@@ -173,3 +173,70 @@ describe('the values of a saved Trip', () => {
     expect(tripPayload(cleared)).toMatchObject({ accommodation: null });
   });
 });
+
+describe('saving a Trip edit that would change its Plan', () => {
+  const needsConfirmation = (effect: unknown) => ({
+    code: 'PLAN_CHANGE_NEEDS_CONFIRMATION',
+    message: 'Server text.',
+    details: { effect },
+  });
+
+  // @covers REQ-TRV-098@v1
+  test('asks the Traveler to confirm, and says Days 6 to 8 will be dropped, when the Trip was shortened', () => {
+    const edited = anEditedForm();
+
+    const state = tripFormReducer(edited, { type: 'failed', error: needsConfirmation({ kind: 'drop-days', droppedDays: [6, 7, 8] }) });
+
+    expect(state.outcome).toEqual({ kind: 'needs-confirmation', message: expect.stringContaining('Days 6 to 8 will be dropped') });
+    expect(state.values).toEqual(edited.values);
+  });
+
+  // @covers REQ-TRV-098@v1
+  test('asks the Traveler to confirm, and says the Plan will be regenerated, when the Destination was changed', () => {
+    const state = tripFormReducer(anEditedForm(), { type: 'failed', error: needsConfirmation({ kind: 'regenerate' }) });
+
+    expect(state.outcome).toEqual({ kind: 'needs-confirmation', message: expect.stringMatching(/Destination/) });
+  });
+
+  // @covers REQ-TRV-098@v1
+  test('falls back to the server message when it names an effect this page does not know', () => {
+    const state = tripFormReducer(anEditedForm(), { type: 'failed', error: needsConfirmation({ kind: 'something-new' }) });
+
+    expect(state.outcome).toEqual({ kind: 'needs-confirmation', message: 'Server text.' });
+  });
+
+  // @covers REQ-TRV-098@v1
+  test('goes away when the Traveler changes anything, because what they were asked about has changed', () => {
+    const asked = tripFormReducer(anEditedForm(), { type: 'failed', error: needsConfirmation({ kind: 'regenerate' }) });
+
+    const state = tripFormReducer(asked, { type: 'changed', field: 'name', value: 'Tokyo Winter' });
+
+    expect(state.outcome).toEqual({ kind: 'idle' });
+  });
+
+  // @covers REQ-TRV-098@v1
+  test.each([
+    ['AI_UNAVAILABLE', 'The AI planner is unavailable right now. Your Trip is unchanged. Please try again later.'],
+    ['PLAN_LIMIT_REACHED', "You have reached today's limit of 20 Plan generations. It resets at 2026-09-24 00:00 UTC."],
+    ['TRIP_CHANGED', 'The Trip was changed while its Plan was being generated, so the Plan was not saved. Try again.'],
+  ])('shows the server message when the answer is %s, so the Traveler knows the Trip is unchanged', (code, message) => {
+    const state = tripFormReducer(anEditedForm(), { type: 'failed', error: { code, message } });
+
+    expect(state.outcome).toEqual({ kind: 'failed', message });
+  });
+});
+
+describe('answering a question about the Plan with No', () => {
+  // @covers REQ-TRV-098@v1
+  test('goes back to an idle form, with everything the Traveler typed still there', () => {
+    const asked = tripFormReducer(anEditedForm(), {
+      type: 'failed',
+      error: { code: 'PLAN_CHANGE_NEEDS_CONFIRMATION', details: { effect: { kind: 'regenerate' } } },
+    });
+
+    const state = tripFormReducer(asked, { type: 'dismissed' });
+
+    expect(state.outcome).toEqual({ kind: 'idle' });
+    expect(state.values).toEqual(asked.values);
+  });
+});

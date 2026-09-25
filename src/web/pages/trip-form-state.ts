@@ -1,6 +1,8 @@
 import { ACCOMMODATION_FIELDS, NO_PREFERENCE, type AccommodationField } from '../../shared/trip-preferences';
 import type { TripView } from '../../shared/trip-schemas';
+import { AI_UNAVAILABLE, PLAN_CHANGE_NEEDS_CONFIRMATION, PLAN_LIMIT_REACHED, TRIP_CHANGED, type WarnedPlanEffect } from '../../shared/plan-schemas';
 import type { ApiError } from '../api-client';
+import { tripChangeWarning } from './plan-view-state';
 
 export const TRIP_FORM_LIST_FIELDS = ['travelStyles', 'interests', 'foodPreferences', 'transportation'] as const;
 export type TripFormListField = (typeof TRIP_FORM_LIST_FIELDS)[number];
@@ -41,6 +43,8 @@ export const ACCOMMODATION_FORM_FIELDS: Readonly<Record<AccommodationField, Trip
 export type TripFormOutcome =
   | { readonly kind: 'idle' }
   | { readonly kind: 'saved'; readonly message: string }
+  /** Saving would change the Trip's Plan; nothing was saved, and the Traveler is asked whether to go on (REQ-TRV-098). */
+  | { readonly kind: 'needs-confirmation'; readonly message: string }
   | { readonly kind: 'failed'; readonly message: string; readonly field?: string };
 
 export interface TripFormState {
@@ -53,6 +57,8 @@ export type TripFormAction =
   | { readonly type: 'changed'; readonly field: TripFormTextField; readonly value: string }
   | { readonly type: 'toggled'; readonly field: TripFormListField; readonly option: string }
   | { readonly type: 'saved' }
+  /** The Traveler answered a question about the Plan with No. */
+  | { readonly type: 'dismissed' }
   | { readonly type: 'failed'; readonly error: ApiError };
 
 const SAVED_MESSAGE = 'Trip saved.';
@@ -115,12 +121,31 @@ export function tripFormReducer(state: TripFormState, action: TripFormAction): T
       };
     case 'saved':
       return { ...state, outcome: { kind: 'saved', message: SAVED_MESSAGE } };
+    case 'dismissed':
+      return { ...state, outcome: { kind: 'idle' } };
     case 'failed':
       return { ...state, outcome: failure(action.error) };
   }
 }
 
+/** The server names the effect of a change on the Plan; one this page does not know is shown as the server worded it. */
+function warnedEffectIn(error: ApiError): WarnedPlanEffect | null {
+  const effect = error.details?.['effect'];
+  if (typeof effect !== 'object' || effect === null) return null;
+  const { kind, droppedDays } = effect as { kind?: unknown; droppedDays?: unknown };
+  if (kind === 'regenerate') return { kind };
+  const isDayList = Array.isArray(droppedDays) && droppedDays.every((day) => typeof day === 'number');
+  return kind === 'drop-days' && isDayList ? { kind, droppedDays: droppedDays as number[] } : null;
+}
+
+const MESSAGES_FROM_THE_SERVER = [AI_UNAVAILABLE, PLAN_LIMIT_REACHED, TRIP_CHANGED];
+
 function failure(error: ApiError): TripFormOutcome {
+  if (error.code === PLAN_CHANGE_NEEDS_CONFIRMATION) {
+    const effect = warnedEffectIn(error);
+    return { kind: 'needs-confirmation', message: effect ? tripChangeWarning(effect) : (error.message ?? FAILED_MESSAGE) };
+  }
+  if (MESSAGES_FROM_THE_SERVER.includes(error.code) && error.message) return { kind: 'failed', message: error.message };
   const fieldName = error.field === undefined ? undefined : FIELD_NAMES[error.field];
   return fieldName === undefined || error.field === undefined
     ? { kind: 'failed', message: FAILED_MESSAGE }

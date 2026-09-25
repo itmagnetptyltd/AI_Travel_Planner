@@ -45,8 +45,9 @@ export async function aTripReadyToPlan(browser: Browser, label: string, dayCount
   return { page, email, tripName, destinationName, admin, dayCount };
 }
 
+/** Presses the button that asks the AI for a whole Plan: Generate Plan before there is one, Regenerate Plan after. */
 export async function generatePlan(page: Page): Promise<void> {
-  await page.getByRole('button', { name: 'Generate Plan' }).click();
+  await page.getByRole('button', { name: /^(Re)?generate Plan$/i }).click();
 }
 
 /**

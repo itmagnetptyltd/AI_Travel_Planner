@@ -15,11 +15,15 @@ import { accountRoutes } from './accounts/account-routes';
 import { profileRoutes } from './accounts/profile-routes';
 import { tripRoutes } from './trips/trip-routes';
 import { planRoutes } from './plans/plan-routes';
+import { planEditRoutes } from './plans/plan-edit-routes';
+import { createPlanEditorService } from './plans/plan-editor-service';
+import { createPlanRegenerationService } from './plans/plan-regeneration-service';
 import { createAdminAccountService } from './admin/admin-account-service';
 import { adminRoutes, type AdminRoute } from './admin/admin-routes';
 import { createDestinationService } from './destinations/destination-service';
 import { destinationRoutes } from './destinations/destination-routes';
 import { createTripService } from './trips/trip-service';
+import { createTripChangeService } from './trips/trip-change-service';
 import { createAiRecordService, scheduleTextPurge } from './plans/ai-record-service';
 import { createAiUsageLimitService } from './plans/ai-usage-limit-service';
 import { createPlanService, type PlanGenerationSettings } from './plans/plan-service';
@@ -68,7 +72,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   const aiLimits = createAiUsageLimitService({ db: deps.db, clock: deps.clock });
   const aiRecords = createAiRecordService({ db: deps.db, clock: deps.clock });
   const planStore = createPlanStore({ db: deps.db, clock: deps.clock });
-  const plans = createPlanService({
+  const aiDeps = {
     db: deps.db,
     clock: deps.clock,
     ai: deps.ai,
@@ -76,7 +80,11 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     limits: aiLimits,
     store: planStore,
     settings: deps.planSettings,
-  });
+  };
+  const plans = createPlanService(aiDeps);
+  const planRegeneration = createPlanRegenerationService(aiDeps);
+  const tripChanges = createTripChangeService({ db: deps.db, trips, store: planStore, plans });
+  const planEditor = createPlanEditorService({ trips, store: planStore });
   const adminAccounts = createAdminAccountService({ db: deps.db, clock: deps.clock, sessions });
   const stopPurging = scheduleTextPurge(aiRecords, AI_TEXT_PURGE_INTERVAL_MS, (error) =>
     app.log.error({ err: error }, 'Clearing expired AI text failed'),
@@ -93,8 +101,9 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     authRateLimitPerMinute: deps.authRateLimitPerMinute,
   });
   await profileRoutes(app, { accounts, sessions });
-  await tripRoutes(app, { accounts, sessions, trips });
-  await planRoutes(app, { sessions, plans, trips, store: planStore });
+  await tripRoutes(app, { accounts, sessions, trips, tripChanges });
+  await planRoutes(app, { sessions, plans, regeneration: planRegeneration, trips, store: planStore });
+  await planEditRoutes(app, { sessions, editor: planEditor });
   await destinationRoutes(app, { sessions, destinations });
   await adminRoutes(app, { accounts, sessions, adminAccounts, destinations, aiLimits, aiRecords, registeredRoutes: registeredAdminRoutes });
 

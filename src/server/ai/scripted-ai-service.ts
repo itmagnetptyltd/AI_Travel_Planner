@@ -36,18 +36,45 @@ const ACTIVITIES = [
   { title: 'Evening stroll through the old town', startTime: '18:00', category: 'Activities', estimatedCost: 0 },
 ] as const;
 
-function planText(dayCount: number, label: string | undefined): string {
-  const days = Array.from({ length: dayCount }, (_, index) => ({
-    dayNumber: index + 1,
-    activities: ACTIVITIES.map((activity) => ({
-      ...activity,
-      title: label ? `${label}: ${activity.title}` : activity.title,
-      durationMinutes: 90,
-      location: 'City centre',
-      reason: `A well-loved way to spend part of day ${index + 1}.`,
-    })),
+const SUGGESTION = { title: 'Tea ceremony at a quiet garden', startTime: '09:00', category: 'Activities', estimatedCost: 30 } as const;
+
+const labelled = (title: string, label: string | undefined): string => (label ? `${label}: ${title}` : title);
+
+function activitiesFor(dayNumber: number, label: string | undefined) {
+  return ACTIVITIES.map((activity) => ({
+    ...activity,
+    title: labelled(activity.title, label),
+    durationMinutes: 90,
+    location: 'City centre',
+    reason: `A well-loved way to spend part of day ${dayNumber}.`,
   }));
+}
+
+function planText(dayCount: number, label: string | undefined): string {
+  const days = Array.from({ length: dayCount }, (_, index) => ({ dayNumber: index + 1, activities: activitiesFor(index + 1, label) }));
   return JSON.stringify({ days, stay: { accommodationType: 'Hotel', suggestedArea: 'City centre', nightlyCostEstimate: 150 } });
+}
+
+const dayText = (dayNumber: number, label: string | undefined): string =>
+  JSON.stringify({ dayNumber, activities: activitiesFor(dayNumber, label) });
+
+const suggestionText = (label: string | undefined): string =>
+  JSON.stringify({
+    activity: {
+      ...SUGGESTION,
+      title: labelled(SUGGESTION.title, label),
+      durationMinutes: 60,
+      location: 'A quiet garden',
+      reason: 'A calm start that suits the morning.',
+    },
+  });
+
+/** Which of the three requests this is, told by how the request begins: a Plan, one Day, or one replacement Activity. */
+function replyTextFor(user: string, script: Script): string {
+  const day = /^Rewrite Day (\d+) of this trip/.exec(user);
+  if (day?.[1]) return dayText(Number(day[1]), script.label);
+  if (user.startsWith('Suggest one activity to replace')) return suggestionText(script.label);
+  return planText(script.dayCount, script.label);
 }
 
 export function createScriptedAiService(scriptFile: string): AiService {
@@ -60,7 +87,7 @@ export function createScriptedAiService(scriptFile: string): AiService {
           request.signal.addEventListener('abort', () => reject(new AiUnavailableError('The scripted AI never answered.')));
         });
       }
-      return { text: planText(script.dayCount, script.label), inputTokens: 500, outputTokens: 1_500 };
+      return { text: replyTextFor(request.user, script), inputTokens: 500, outputTokens: 1_500 };
     },
   };
 }

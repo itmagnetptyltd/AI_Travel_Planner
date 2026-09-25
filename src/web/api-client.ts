@@ -2,6 +2,8 @@ export interface ApiError {
   readonly code: string;
   readonly message?: string;
   readonly field?: string;
+  /** The rest of what the server sent, for an answer that carries more than a message: the Days it names, or the effect of a change. */
+  readonly details?: Readonly<Record<string, unknown>>;
 }
 
 export type ApiResult<T> =
@@ -32,11 +34,13 @@ export async function api<T>(method: string, path: string, body?: unknown): Prom
 
 function toApiError(payload: unknown): ApiError {
   if (typeof payload === 'object' && payload !== null && 'code' in payload) {
-    const { code, message, field } = payload as Record<string, unknown>;
+    const details = payload as Record<string, unknown>;
+    const { code, message, field } = details;
     return {
       code: String(code),
       ...(typeof message === 'string' ? { message } : {}),
       ...(typeof field === 'string' ? { field } : {}),
+      details,
     };
   }
   return { code: 'UNKNOWN', message: 'Something went wrong. Try again.' };

@@ -25,6 +25,8 @@ export interface TripService {
   listForOwner(ownerId: string): readonly TripView[];
   /** Absent, deleted and someone else's Trip all read as null (REQ-TRV-007). */
   getForOwner(ownerId: string, id: string): TripView | null;
+  /** The Trip as it would be after `change`, checked exactly as `update` checks it, without saving anything. */
+  preview(ownerId: string, id: string, change: TripUpdate): TripResult;
   update(ownerId: string, id: string, change: TripUpdate): TripResult;
   /** Soft delete: the row stays, so the Trip still holds its Destination. False when nothing was deleted. */
   softDelete(ownerId: string, id: string): boolean;
@@ -52,6 +54,12 @@ export function createTripService(deps: { readonly db: TrvDatabase; readonly clo
       .where(and(eq(trips.id, id), eq(trips.ownerAccountId, ownerId), isNull(trips.deletedAt)))
       .get();
   const view = (row: TripRow): TripView => toView(row, destinationOf(db, row.destinationId));
+  const preview: TripService['preview'] = (ownerId, id, change) => {
+    const existing = ownedRow(ownerId, id);
+    if (!existing) return NOT_FOUND;
+    const problem = changeProblem(existing, change, today(), isEnabledDestination);
+    return problem ? invalid(problem) : { ok: true, trip: view({ ...existing, ...pickTripFields(change) }) };
+  };
 
   return {
     create(ownerId, input) {
@@ -92,11 +100,11 @@ export function createTripService(deps: { readonly db: TrvDatabase; readonly clo
       return row ? view(row) : null;
     },
 
+    preview,
+
     update(ownerId, id, change) {
-      const existing = ownedRow(ownerId, id);
-      if (!existing) return NOT_FOUND;
-      const problem = changeProblem(existing, change, today(), isEnabledDestination);
-      if (problem) return invalid(problem);
+      const previewed = preview(ownerId, id, change);
+      if (!previewed.ok) return previewed;
       db.update(trips)
         .set({ ...pickTripFields(change), updatedAt: clock.now() })
         .where(eq(trips.id, id))

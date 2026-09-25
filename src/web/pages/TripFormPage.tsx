@@ -24,6 +24,7 @@ export function TripFormPage() {
   const navigate = useNavigate();
   const [state, dispatch] = useReducer(tripFormReducer, undefined, initialTripFormState);
   const [loadFailure, setLoadFailure] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     let isCurrent = true;
@@ -44,10 +45,14 @@ export function TripFormPage() {
     };
   }, [id, isEditing]);
 
-  const save = async () => {
+  /** `confirmPlanChange` says the Traveler has been told what the change does to the Trip's Plan, and agrees. */
+  const save = async (confirmPlanChange = false) => {
+    setIsSaving(true);
+    const payload = confirmPlanChange ? { ...tripPayload(state.values), confirmPlanChange } : tripPayload(state.values);
     const result = isEditing
-      ? await api<TripView>('PATCH', `/api/trips/${encodeURIComponent(id)}`, tripPayload(state.values))
-      : await api<TripView>('POST', '/api/trips', tripPayload(state.values));
+      ? await api<TripView>('PATCH', `/api/trips/${encodeURIComponent(id)}`, payload)
+      : await api<TripView>('POST', '/api/trips', payload);
+    setIsSaving(false);
     if (!result.ok) {
       dispatch({ type: 'failed', error: result.error });
       return;
@@ -62,7 +67,14 @@ export function TripFormPage() {
   return (
     <>
       <h1>{isEditing ? 'Edit Trip' : 'New Trip'}</h1>
-      <TripForm state={state} dispatch={dispatch} submitLabel={isEditing ? 'Save changes' : 'Create Trip'} onSubmit={() => void save()} />
+      <TripForm
+        state={state}
+        dispatch={dispatch}
+        submitLabel={isEditing ? 'Save changes' : 'Create Trip'}
+        onSubmit={() => void save()}
+        isSaving={isSaving}
+        onConfirmPlanChange={() => void save(true)}
+      />
       <p>
         <Link to={isEditing ? `/trips/${encodeURIComponent(id)}` : '/trips'}>Back</Link>
       </p>

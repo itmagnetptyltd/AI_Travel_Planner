@@ -1,8 +1,10 @@
 import { describe, expect, test } from 'vitest';
-import { parsePlanReply, type PlanReplyTrip } from '../../src/server/plans/plan-reply';
+import { parseActivityReply, parseDayReply, parsePlanReply, type PlanReplyTrip } from '../../src/server/plans/plan-reply';
 import { aPlanReplyText, anActivity } from '../support/a-plan-reply';
 
-const EIGHT_DAY_TRIP: PlanReplyTrip = { startDate: '2026-10-10', dayCount: 8, currency: 'USD' };
+const TRAVELLERS = { adults: 2, children: 2, budget: 5000 } as const;
+const EIGHT_DAY_TRIP: PlanReplyTrip = { startDate: '2026-10-10', dayCount: 8, currency: 'USD', ...TRAVELLERS };
+const ONE_DAY_TRIP: PlanReplyTrip = { ...EIGHT_DAY_TRIP, dayCount: 1 };
 
 function parsedPlan(text: string, trip = EIGHT_DAY_TRIP) {
   const result = parsePlanReply(text, trip);
@@ -32,7 +34,7 @@ describe('reading the AI reply into a Plan', () => {
       ],
     });
 
-    const plan = parsedPlan(text, { startDate: '2026-10-10', dayCount: 1, currency: 'USD' });
+    const plan = parsedPlan(text, ONE_DAY_TRIP);
 
     expect(plan.days[0]?.activities.map((a) => a.startTime)).toEqual(['08:00', '10:30', '13:00', '15:00', '19:00']);
   });
@@ -48,7 +50,7 @@ describe('reading the AI reply into a Plan', () => {
   test('refuses a reply in which a Day holds no Activity', () => {
     const text = aPlanReplyText({ days: [{ dayNumber: 1, activities: [] }] });
 
-    const result = parsePlanReply(text, { startDate: '2026-10-10', dayCount: 1, currency: 'USD' });
+    const result = parsePlanReply(text, ONE_DAY_TRIP);
 
     expect(result.ok).toBe(false);
   });
@@ -75,7 +77,7 @@ describe('reading the AI reply into a Plan', () => {
       const raw = JSON.parse(aPlanReplyText({ dayCount: 1 })) as { days: { activities: Record<string, unknown>[] }[] };
       delete raw.days[0]?.activities[0]?.[field];
 
-      const result = parsePlanReply(JSON.stringify(raw), { startDate: '2026-10-10', dayCount: 1, currency: 'USD' });
+      const result = parsePlanReply(JSON.stringify(raw), ONE_DAY_TRIP);
 
       expect(result.ok).toBe(false);
     },
@@ -86,7 +88,7 @@ describe('reading the AI reply into a Plan', () => {
     const raw = JSON.parse(aPlanReplyText({ dayCount: 1 })) as { days: { activities: Record<string, unknown>[] }[] };
     delete raw.days[0]?.activities[0]?.['estimatedCost'];
 
-    const result = parsePlanReply(JSON.stringify(raw), { startDate: '2026-10-10', dayCount: 1, currency: 'USD' });
+    const result = parsePlanReply(JSON.stringify(raw), ONE_DAY_TRIP);
 
     expect(result.ok).toBe(false);
   });
@@ -105,5 +107,96 @@ describe('reading the AI reply into a Plan', () => {
     const result = parsePlanReply(aPlanReplyText({ dayCount: 8, stay: null }), EIGHT_DAY_TRIP);
 
     expect(result.ok).toBe(false);
+  });
+});
+
+describe('what the server adds to a Plan it reads from the AI', () => {
+  // @covers REQ-TRV-045@v1
+  test('gives every Activity its own id, none of them empty, and none of them changed by hand', () => {
+    const plan = parsedPlan(aPlanReplyText({ dayCount: 8 }));
+
+    const activities = plan.days.flatMap((day) => day.activities);
+    const ids = activities.map((activity) => activity.id);
+    expect(ids.every((id) => id.length > 0)).toBe(true);
+    expect(new Set(ids).size).toBe(activities.length);
+    expect(activities.every((activity) => activity.changedByHand === false)).toBe(true);
+  });
+
+  // @covers REQ-TRV-098@v1
+  test('records the travelers and budget the Plan was made for, so a later change to them can be noticed', () => {
+    const plan = parsedPlan(aPlanReplyText({ dayCount: 8 }));
+
+    expect(plan.basis).toEqual({ adults: 2, children: 2, budget: 5000 });
+  });
+
+  // @covers REQ-TRV-045@v1
+  test('ignores an id or a changed-by-hand flag the AI wrote', () => {
+    const raw = JSON.parse(aPlanReplyText({ dayCount: 1 })) as { days: { activities: Record<string, unknown>[] }[] };
+    for (const activity of raw.days[0]?.activities ?? []) {
+      activity['id'] = 'chosen-by-the-ai';
+      activity['changedByHand'] = true;
+    }
+
+    const result = parsePlanReply(JSON.stringify(raw), ONE_DAY_TRIP);
+
+    if (!result.ok) throw new Error(result.problem);
+    const activities = result.plan.days.flatMap((day) => day.activities);
+    expect(activities.map((activity) => activity.id)).not.toContain('chosen-by-the-ai');
+    expect(activities.every((activity) => activity.changedByHand === false)).toBe(true);
+  });
+});
+
+describe('reading the AI reply for one Day', () => {
+  const dayReply = (dayNumber: number, activities: readonly Partial<ReturnType<typeof anActivity>>[]) =>
+    JSON.stringify({ dayNumber, activities: activities.map((activity) => anActivity(activity)) });
+
+  // @covers REQ-TRV-042@v1
+  test('gives the Activities of the Day, in start-time order, each with its own id and not changed by hand', () => {
+    const result = parseDayReply(dayReply(4, [{ startTime: '18:00' }, { startTime: '09:00', title: 'Early walk' }]), 4);
+
+    if (!result.ok) throw new Error(result.problem);
+    expect(result.activities.map((a) => a.startTime)).toEqual(['09:00', '18:00']);
+    expect(result.activities.map((a) => a.changedByHand)).toEqual([false, false]);
+    expect(new Set(result.activities.map((a) => a.id)).size).toBe(2);
+  });
+
+  // @covers REQ-TRV-042@v1
+  test('refuses a reply about a different Day than the one asked for', () => {
+    expect(parseDayReply(dayReply(5, [{}]), 4)).toEqual({ ok: false, problem: 'wrong-day' });
+  });
+
+  // @covers REQ-TRV-042@v1
+  test('refuses a reply with no Activity, because a regenerated Day must not come back empty', () => {
+    expect(parseDayReply(dayReply(4, []), 4)).toEqual({ ok: false, problem: 'invalid' });
+  });
+
+  // @covers REQ-TRV-042@v1
+  test('refuses text that is not JSON, and an Activity missing its cost', () => {
+    const noCost = JSON.parse(dayReply(4, [{}])) as { activities: Record<string, unknown>[] };
+    delete noCost.activities[0]?.['estimatedCost'];
+
+    expect(parseDayReply('Sorry, I cannot help with that.', 4)).toEqual({ ok: false, problem: 'not-json' });
+    expect(parseDayReply(JSON.stringify(noCost), 4)).toEqual({ ok: false, problem: 'invalid' });
+  });
+
+  // @covers REQ-TRV-042@v1
+  test('refuses a reply that is a whole Plan, not one Day', () => {
+    expect(parseDayReply(aPlanReplyText({ dayCount: 8 }), 4).ok).toBe(false);
+  });
+});
+
+describe('reading the AI reply for a replacement Activity', () => {
+  // @covers REQ-TRV-047@v1
+  test('gives the suggested Activity with its time, duration, cost, location and category', () => {
+    const result = parseActivityReply(JSON.stringify({ activity: anActivity({ title: 'Tea ceremony', estimatedCost: 30 }) }));
+
+    if (!result.ok) throw new Error(result.problem);
+    expect(result.activity).toMatchObject({ title: 'Tea ceremony', startTime: '09:00', durationMinutes: 90, estimatedCost: 30, location: 'Asakusa', category: 'Activities' });
+  });
+
+  // @covers REQ-TRV-047@v1
+  test('refuses text that is not JSON, and an Activity that is not valid', () => {
+    expect(parseActivityReply('no')).toEqual({ ok: false, problem: 'not-json' });
+    expect(parseActivityReply(JSON.stringify({ activity: { title: 'x' } }))).toEqual({ ok: false, problem: 'invalid' });
   });
 });

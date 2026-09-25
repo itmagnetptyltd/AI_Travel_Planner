@@ -1,26 +1,19 @@
-import type { FastifyInstance, FastifyReply } from 'fastify';
+import type { FastifyInstance } from 'fastify';
+import { z } from 'zod';
 import { requireTraveler } from '../accounts/require-traveler';
 import type { SessionService } from '../accounts/session-service';
-import {
-  AI_UNAVAILABLE,
-  AI_UNAVAILABLE_MESSAGE,
-  PLAN_LIMIT_REACHED,
-  PLAN_NOT_FOUND,
-  PLAN_VERSION_NOT_FOUND,
-  TRIP_CHANGED,
-} from '../../shared/plan-schemas';
+import { parseBody } from '../http/validation';
+import { PLAN_NOT_FOUND, PLAN_VERSION_NOT_FOUND } from '../../shared/plan-schemas';
 import type { TripService } from '../trips/trip-service';
+import { replyToRefusal, tripNotFound } from './plan-refusals';
+import type { PlanRegenerationService } from './plan-regeneration-service';
 import type { PlanService } from './plan-service';
 import type { PlanStore } from './plan-store';
 
-/** `2026-09-24 00:00 UTC` — the reset time as the Traveler is told it. */
-function resetTimeText(resetsAt: Date): string {
-  const iso = resetsAt.toISOString();
-  return `${iso.slice(0, 10)} ${iso.slice(11, 16)} UTC`;
-}
+/** A request that may replace Activities the Traveler changed by hand carries their agreement to lose them. */
+export const regenerationRequestSchema = z.object({ confirmReplaceEdits: z.boolean().optional() }).strict();
 
-const tripNotFound = (reply: FastifyReply) =>
-  reply.code(404).send({ code: 'TRIP_NOT_FOUND', message: 'Trip not found.' });
+type IdParams = { readonly id: string };
 
 /**
  * Generating a Plan spends a paid AI call, and a saved Plan is the Traveler's own data, so only the
@@ -32,21 +25,23 @@ export async function planRoutes(
   deps: {
     readonly sessions: SessionService;
     readonly plans: PlanService;
+    readonly regeneration: PlanRegenerationService;
     readonly trips: TripService;
     readonly store: PlanStore;
   },
 ): Promise<void> {
   const loggedIn = requireTraveler(deps.sessions);
-  const ownedTripId = (request: { accountId?: string; params: { id: string } }): string | null =>
-    deps.trips.getForOwner(request.accountId ?? '', request.params.id) ? request.params.id : null;
+  const ownerOf = (request: { accountId?: string }) => request.accountId ?? '';
+  const ownedTripId = (request: { accountId?: string; params: IdParams }): string | null =>
+    deps.trips.getForOwner(ownerOf(request), request.params.id) ? request.params.id : null;
 
-  app.get<{ Params: { id: string } }>('/api/trips/:id/plan', { preHandler: loggedIn }, async (request, reply) => {
+  app.get<{ Params: IdParams }>('/api/trips/:id/plan', { preHandler: loggedIn }, async (request, reply) => {
     const tripId = ownedTripId(request);
     if (tripId === null) return tripNotFound(reply);
     return deps.store.current(tripId) ?? reply.code(404).send({ code: PLAN_NOT_FOUND, message: 'This Trip has no Plan yet.' });
   });
 
-  app.get<{ Params: { id: string } }>('/api/trips/:id/plan/versions', { preHandler: loggedIn }, async (request, reply) => {
+  app.get<{ Params: IdParams }>('/api/trips/:id/plan/versions', { preHandler: loggedIn }, async (request, reply) => {
     const tripId = ownedTripId(request);
     return tripId === null ? tripNotFound(reply) : { versions: deps.store.listVersions(tripId) };
   });
@@ -67,31 +62,31 @@ export async function planRoutes(
     },
   );
 
-  app.post<{ Params: { id: string } }>(
-    '/api/trips/:id/plan',
+  app.post<{ Params: IdParams }>('/api/trips/:id/plan', { preHandler: loggedIn }, async (request, reply) => {
+    const body = await parseBody(regenerationRequestSchema, request.body, reply);
+    if (!body.ok) return;
+    const result = await deps.plans.generate(ownerOf(request), request.params.id, body.value);
+    return result.ok ? reply.code(201).send(result.plan) : replyToRefusal(request, reply, result, 'Plan generation');
+  });
+
+  app.post<{ Params: IdParams & { day: string } }>(
+    '/api/trips/:id/plan/days/:day/regenerate',
     { preHandler: loggedIn },
     async (request, reply) => {
-      const result = await deps.plans.generate(request.accountId ?? '', request.params.id);
-      if (result.ok) return reply.code(201).send(result.plan);
-      switch (result.error) {
-        case 'not-found':
-          return tripNotFound(reply);
-        case 'limit-reached':
-          return reply.code(429).send({
-            code: PLAN_LIMIT_REACHED,
-            message: `You have reached today's limit of ${result.limit} Plan generations. It resets at ${resetTimeText(result.resetsAt)}.`,
-            limit: result.limit,
-            resetsAt: result.resetsAt.toISOString(),
-          });
-        case 'trip-changed':
-          return reply.code(409).send({
-            code: TRIP_CHANGED,
-            message: 'The Trip was changed while its Plan was being generated, so the Plan was not saved. Try again.',
-          });
-        case 'ai-unavailable':
-          request.log.warn({ tripId: request.params.id, reason: result.reason }, 'Plan generation failed');
-          return reply.code(503).send({ code: AI_UNAVAILABLE, message: AI_UNAVAILABLE_MESSAGE });
-      }
+      const body = await parseBody(regenerationRequestSchema, request.body, reply);
+      if (!body.ok) return;
+      const dayNumber = /^[1-9]\d*$/.test(request.params.day) ? Number(request.params.day) : 0;
+      const result = await deps.regeneration.regenerateDay(ownerOf(request), request.params.id, dayNumber, body.value);
+      return result.ok ? reply.code(201).send(result.plan) : replyToRefusal(request, reply, result, 'Day regeneration');
+    },
+  );
+
+  app.post<{ Params: IdParams & { activityId: string } }>(
+    '/api/trips/:id/plan/activities/:activityId/suggestion',
+    { preHandler: loggedIn },
+    async (request, reply) => {
+      const result = await deps.regeneration.suggestReplacement(ownerOf(request), request.params.id, request.params.activityId);
+      return result.ok ? reply.code(200).send(result.activity) : replyToRefusal(request, reply, result, 'Activity suggestion');
     },
   );
 }

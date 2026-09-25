@@ -10,7 +10,7 @@ import { createPlanStore } from '../../src/server/plans/plan-store';
 import { createTripService } from '../../src/server/trips/trip-service';
 import { MAX_PLAN_VERSIONS } from '../../src/shared/plan-schemas';
 import { aDestination } from '../support/a-destination';
-import { aPlanView } from '../support/a-plan';
+import { aPlanView, withActivityChanged } from '../support/a-plan';
 import { aTripInput, anOwner, TODAY } from '../support/a-trip';
 import { aTestDatabase } from '../support/build-test-app';
 import { aFixedClock, type FixedClock } from '../support/fixed-clock';
@@ -240,5 +240,93 @@ describe('reading a stored Plan', () => {
     db.update(planVersions).set({ planJson: '{"days":"not a list"}' }).where(eq(planVersions.tripId, tripId)).run();
 
     expect(() => store.current(tripId)).toThrow(/stored Plan/i);
+  });
+});
+
+describe('a Plan saved before Activities had ids', () => {
+  /** The JSON an earlier build would have stored: no basis, and Activities with no id or changed-by-hand flag. */
+  const legacySnapshot = (): string => {
+    const raw = JSON.parse(JSON.stringify(aPlanView({ days: 3 }))) as {
+      basis?: unknown;
+      days: { activities: Record<string, unknown>[] }[];
+    };
+    delete raw.basis;
+    for (const activity of raw.days.flatMap((day) => day.activities)) {
+      delete activity['id'];
+      delete activity['changedByHand'];
+    }
+    return JSON.stringify(raw);
+  };
+
+  // @covers REQ-TRV-045@v1
+  test('is read with an id on every Activity, the same ids each time it is read', () => {
+    const { db, store, tripId } = aStore();
+    store.save(tripId, aPlanView({ days: 3 }), 'generation');
+    db.update(planVersions).set({ planJson: legacySnapshot() }).where(eq(planVersions.tripId, tripId)).run();
+
+    const first = store.current(tripId);
+    const second = store.current(tripId);
+
+    const ids = first?.days.flatMap((day) => day.activities.map((activity) => activity.id)) ?? [];
+    expect(ids).toHaveLength(6);
+    expect(new Set(ids).size).toBe(6);
+    expect(ids.every((id) => id.length > 0)).toBe(true);
+    expect(second?.days).toEqual(first?.days);
+  });
+
+  // @covers REQ-TRV-045@v1
+  test('is read as not changed by hand, and with no basis', () => {
+    const { db, store, tripId } = aStore();
+    store.save(tripId, aPlanView({ days: 3 }), 'generation');
+    db.update(planVersions).set({ planJson: legacySnapshot() }).where(eq(planVersions.tripId, tripId)).run();
+
+    const read = store.current(tripId);
+
+    expect(read?.days.flatMap((day) => day.activities).every((activity) => activity.changedByHand === false)).toBe(true);
+    expect(read?.basis).toBeUndefined();
+  });
+});
+
+describe('saving edits as versions', () => {
+  // @covers REQ-TRV-045@v1
+  test('saves a hand edit as a new version with the source edit, keeping the earlier version', () => {
+    const { store, tripId } = aStore();
+    store.save(tripId, aPlanView({ label: 'Generated' }), 'generation');
+
+    const saved = store.save(tripId, aPlanView({ label: 'Edited' }), 'edit');
+
+    expect(saved).toMatchObject({ version: 2, source: 'edit' });
+    expect(store.listVersions(tripId).map((v) => [v.version, v.source])).toEqual([[2, 'edit'], [1, 'generation']]);
+  });
+
+  // @covers REQ-TRV-098@v1
+  test('keeps what the Plan was made for through a save and a read', () => {
+    const { store, tripId } = aStore();
+
+    store.save(tripId, aPlanView(), 'generation');
+
+    expect(store.current(tripId)?.basis).toEqual({ adults: 2, children: 2, budget: 5000 });
+  });
+
+  // @covers REQ-TRV-045@v1
+  test('keeps ids and changed-by-hand marks through a save and a read', () => {
+    const { store, tripId } = aStore();
+    const plan = withActivityChanged(aPlanView({ days: 2 }), 'Plan A-day-1-morning', { changedByHand: true });
+
+    store.save(tripId, plan, 'edit');
+
+    expect(store.current(tripId)?.days).toEqual(plan.days);
+  });
+
+  // @covers REQ-TRV-041@v1
+  test('restores an earlier version with its ids and marks as they were', () => {
+    const { store, tripId } = aStore();
+    const first = withActivityChanged(aPlanView({ days: 2 }), 'Plan A-day-1-morning', { changedByHand: true });
+    store.save(tripId, first, 'edit');
+    store.save(tripId, aPlanView({ label: 'Second' }), 'generation');
+
+    store.restore(tripId, 1);
+
+    expect(store.current(tripId)?.days).toEqual(first.days);
   });
 });
