@@ -133,7 +133,13 @@ function registerDestinationRoutes(scope: FastifyInstance, deps: AdminRouteDeps)
     destinations.setDisabled(request.params.id, false) ?? notFound(reply, 'Destination'),
   );
 
-  scope.delete<{ Params: IdParams }>('/api/admin/destinations/:id', async (request, reply) =>
-    destinations.remove(request.params.id) ? reply.code(204).send() : notFound(reply, 'Destination'),
-  );
+  scope.delete<{ Params: IdParams }>('/api/admin/destinations/:id', async (request, reply) => {
+    const removal = destinations.remove(request.params.id);
+    if (removal === 'in-use') {
+      return reply
+        .code(409)
+        .send({ code: 'DESTINATION_IN_USE', message: 'This Destination is used by a Trip and cannot be removed.' });
+    }
+    return removal === 'removed' ? reply.code(204).send() : notFound(reply, 'Destination');
+  });
 }

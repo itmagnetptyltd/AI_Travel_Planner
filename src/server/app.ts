@@ -17,6 +17,7 @@ import { createAdminAccountService } from './admin/admin-account-service';
 import { adminRoutes, type AdminRoute } from './admin/admin-routes';
 import { createDestinationService } from './destinations/destination-service';
 import { destinationRoutes } from './destinations/destination-routes';
+import { createTripService } from './trips/trip-service';
 
 export interface AppDeps {
   readonly db: TrvDatabase;
@@ -53,6 +54,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   });
   const sessions = createSessionService(deps.db, deps.clock);
   const destinations = createDestinationService({ db: deps.db, clock: deps.clock });
+  const trips = createTripService({ db: deps.db, clock: deps.clock });
   const adminAccounts = createAdminAccountService({ db: deps.db, clock: deps.clock, sessions });
   const registeredAdminRoutes: AdminRoute[] = [];
   app.decorate('adminRoutes', registeredAdminRoutes);
@@ -65,7 +67,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     authRateLimitPerMinute: deps.authRateLimitPerMinute,
   });
   await profileRoutes(app, { accounts, sessions });
-  await tripRoutes(app, { accounts, sessions });
+  await tripRoutes(app, { accounts, sessions, trips });
   await destinationRoutes(app, { sessions, destinations });
   await adminRoutes(app, { accounts, sessions, adminAccounts, destinations, registeredRoutes: registeredAdminRoutes });
 

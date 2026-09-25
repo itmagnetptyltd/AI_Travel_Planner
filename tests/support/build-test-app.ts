@@ -17,9 +17,9 @@ export interface TestApp {
 }
 
 /** A fresh app over a fresh, fully migrated in-memory SQLite database. */
-export async function buildTestApp(): Promise<TestApp> {
+export async function buildTestApp(options: { readonly now?: Date } = {}): Promise<TestApp> {
   const { db, close } = openDatabase(':memory:');
-  const clock = aFixedClock();
+  const clock = aFixedClock(options.now);
   const email = aCapturingEmailService();
   const app = await buildApp({
     db,

@@ -12,6 +12,8 @@ import { LoginPage } from './pages/LoginPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { TripFormPage } from './pages/TripFormPage';
+import { TripPage } from './pages/TripPage';
 import { TripsPage } from './pages/TripsPage';
 
 export function App() {
@@ -24,7 +26,10 @@ export function App() {
         <Route path="/confirm-email" element={<ConfirmEmailPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/trips/*" element={<RequireSession><TripsPage /></RequireSession>} />
+        <Route path="/trips" element={<RequireSession><TripsPage /></RequireSession>} />
+        <Route path="/trips/new" element={<RequireSession><TripFormPage /></RequireSession>} />
+        <Route path="/trips/:id" element={<RequireSession><TripPage /></RequireSession>} />
+        <Route path="/trips/:id/edit" element={<RequireSession><TripFormPage /></RequireSession>} />
         <Route path="/profile" element={<RequireSession><ProfilePage /></RequireSession>} />
         <Route path="/destinations" element={<RequireSession><DestinationsPage /></RequireSession>} />
         <Route path="/destinations/:id" element={<RequireSession><DestinationDetailPage /></RequireSession>} />

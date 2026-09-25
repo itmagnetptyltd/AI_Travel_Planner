@@ -90,7 +90,7 @@ describe('removing a Destination', () => {
 
     const removed = service.remove(kyoto.id);
 
-    expect(removed).toBe(true);
+    expect(removed).toBe('removed');
     expect(service.listForAdmin()).toEqual([]);
   });
 });
