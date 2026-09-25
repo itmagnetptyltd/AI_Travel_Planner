@@ -1,34 +1,34 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { TripView } from '../../shared/trip-schemas';
-import { api } from '../api-client';
 import { DeletedTrips } from '../components/DeletedTrips';
-import { travelersLabel } from './trip-labels';
+import { TripFilters } from '../components/TripFilters';
+import { TripTable } from '../components/TripTable';
+import { apiPathFor, filterOptionsFrom, filterProblem, hasFilters, listMessage } from './trip-list-state';
+import { useFilterForm } from './use-filter-form';
+import { useTrips } from './use-trips';
 
-type TripsState =
-  | { readonly state: 'loading' }
-  | { readonly state: 'loaded'; readonly trips: readonly TripView[] }
-  | { readonly state: 'failed'; readonly message: string };
+const UNFILTERED = '/api/trips';
 
-/** The Traveler's own saved Trips (REQ-TRV-016). */
+/**
+ * The Traveler's own saved Trips (REQ-TRV-016), which they can search and filter (REQ-TRV-076, REQ-TRV-077). The
+ * search and the filters are in the address of the page, so a reload keeps them and Back returns to the list as
+ * it was. What the page has to say (why the filters cannot be sent, or that nothing matches) is one polite
+ * announcement, so a screen reader hears it.
+ */
 export function TripsPage() {
-  const [trips, setTrips] = useState<TripsState>({ state: 'loading' });
   const [reloads, setReloads] = useState(0);
-
-  useEffect(() => {
-    let isCurrent = true;
-    void api<{ trips: TripView[] }>('GET', '/api/trips').then((result) => {
-      if (!isCurrent) return;
-      setTrips(
-        result.ok
-          ? { state: 'loaded', trips: result.data.trips }
-          : { state: 'failed', message: result.error.message ?? 'Your Trips could not be loaded.' },
-      );
-    });
-    return () => {
-      isCurrent = false;
-    };
-  }, [reloads]);
+  const { form, searchText, setSearchText, change, clear } = useFilterForm();
+  const problem = filterProblem(form);
+  const all = useTrips(UNFILTERED, reloads);
+  // With no filter, or one that cannot be sent, the list is the whole list, which is already asked for.
+  const filteredPath = problem || !hasFilters(form) ? null : apiPathFor(form);
+  const filtered = useTrips(filteredPath, reloads);
+  const shown = filteredPath === null ? all : filtered;
+  const isAnswerToNow = shown.state === 'loaded' && shown.path === (filteredPath ?? UNFILTERED);
+  const message =
+    all.state === 'loaded' && shown.state === 'loaded' && isAnswerToNow
+      ? listMessage({ total: all.trips.length, shown: shown.trips.length, hasFilters: hasFilters(form) })
+      : null;
 
   return (
     <>
@@ -36,42 +36,21 @@ export function TripsPage() {
       <p>
         <Link to="/trips/new">New Trip</Link>
       </p>
-      {trips.state === 'loading' ? <p>Loading…</p> : null}
-      {trips.state === 'loaded' && trips.trips.length === 0 ? <p>You have no Trips yet.</p> : null}
-      {trips.state === 'loaded' && trips.trips.length > 0 ? <TripTable trips={trips.trips} /> : null}
-      {trips.state === 'failed' ? <p role="alert">{trips.message}</p> : null}
+      {all.state === 'loaded' && all.trips.length > 0 ? (
+        <TripFilters
+          form={form}
+          searchText={searchText}
+          options={filterOptionsFrom(all.trips)}
+          onSearchText={setSearchText}
+          onChange={change}
+          onClear={clear}
+        />
+      ) : null}
+      <p role="status">{problem ?? message ?? ''}</p>
+      {shown.state === 'loading' ? <p>Loading…</p> : null}
+      {shown.state === 'loaded' && shown.trips.length > 0 ? <TripTable trips={shown.trips} /> : null}
+      {shown.state === 'failed' ? <p role="alert">{shown.message}</p> : null}
       <DeletedTrips onRestored={() => setReloads((count) => count + 1)} />
     </>
-  );
-}
-
-function TripTable({ trips }: { readonly trips: readonly TripView[] }) {
-  return (
-    <table>
-      <thead>
-        <tr>
-          <th scope="col">Name</th>
-          <th scope="col">Destination</th>
-          <th scope="col">Dates</th>
-          <th scope="col">Travelers</th>
-          <th scope="col">Budget</th>
-          <th scope="col">Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {trips.map((trip) => (
-          <tr key={trip.id}>
-            <td>
-              <Link to={`/trips/${encodeURIComponent(trip.id)}`}>{trip.name}</Link>
-            </td>
-            <td>{`${trip.destination.name}, ${trip.destination.country}`}</td>
-            <td>{`${trip.startDate} to ${trip.endDate}`}</td>
-            <td>{travelersLabel(trip)}</td>
-            <td>{`${trip.budget} ${trip.currency}`}</td>
-            <td>{trip.status}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
   );
 }

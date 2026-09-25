@@ -13,6 +13,7 @@ import {
   type TripView,
 } from '../../shared/trip-schemas';
 import { ACCOMMODATION_FIELDS, type AccommodationPreferences } from '../../shared/trip-preferences';
+import { filterTrips, type TripFilter } from '../../shared/trip-filter';
 
 export type TripField = 'destinationId' | 'startDate' | 'endDate';
 
@@ -24,7 +25,8 @@ export type TripResult =
 
 export interface TripService {
   create(ownerId: string, input: TripInput): TripResult;
-  listForOwner(ownerId: string): readonly TripView[];
+  /** The owner's own Trips, sorted by name, narrowed by a search and filters if given. Nobody else's Trip, and no deleted one, is ever listed. */
+  listForOwner(ownerId: string, filter?: TripFilter): readonly TripView[];
   /** Absent, deleted and someone else's Trip all read as null (REQ-TRV-007). */
   getForOwner(ownerId: string, id: string): TripView | null;
   /** The Trip as it would be after `change`, checked exactly as `update` checks it, without saving anything. */
@@ -102,14 +104,16 @@ export function createTripService(deps: { readonly db: TrvDatabase; readonly clo
       return { ok: true, trip: view(row) };
     },
 
-    listForOwner(ownerId) {
-      return db
+    listForOwner(ownerId, filter = {}) {
+      const own = db
         .select()
         .from(trips)
         .where(and(eq(trips.ownerAccountId, ownerId), isNull(trips.deletedAt)))
         .orderBy(asc(trips.name))
         .all()
         .map(view);
+      // A Traveler's own Trips are few, and a Trip's length comes from its dates, so this is done here, not in SQL.
+      return filterTrips(own, filter);
     },
 
     getForOwner(ownerId, id) {

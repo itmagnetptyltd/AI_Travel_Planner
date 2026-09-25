@@ -18,11 +18,15 @@ export async function aConfirmedTravelerOnTrips(browser: Browser, label: string)
 }
 
 /** An Administrator, in a context of their own, adds an enabled Destination in Japan. */
-export async function aDestinationAddedByAdministrator(browser: Browser, base: string): Promise<{ name: string; admin: Page }> {
+export async function aDestinationAddedByAdministrator(
+  browser: Browser,
+  base: string,
+  country = 'Japan',
+): Promise<{ name: string; admin: Page }> {
   const admin = await (await browser.newContext()).newPage();
   const name = uniqueName(base);
   await logInAsAdministrator(admin);
-  await addDestinationThroughUi(admin, name);
+  await addDestinationThroughUi(admin, name, { country });
   return { name, admin };
 }
 
@@ -30,6 +34,8 @@ export interface TripDetails {
   readonly name: string;
   readonly destinationName: string;
   readonly typed?: string;
+  /** The country of the Destination, as the suggestion list shows it. Japan unless told otherwise. */
+  readonly country?: string;
   readonly startDate?: string;
   readonly endDate?: string;
   readonly adults?: string;
@@ -38,11 +44,11 @@ export interface TripDetails {
   readonly currency?: string;
 }
 
-export async function chooseDestination(page: Page, typed: string, destinationName: string): Promise<void> {
+export async function chooseDestination(page: Page, typed: string, destinationName: string, country = 'Japan'): Promise<void> {
   await page.getByLabel('Destination', { exact: true }).fill(typed);
   await page
     .getByRole('list', { name: 'Destination suggestions' })
-    .getByRole('button', { name: `${destinationName}, Japan` })
+    .getByRole('button', { name: `${destinationName}, ${country}` })
     .click();
 }
 
@@ -51,7 +57,7 @@ export async function fillNewTrip(page: Page, trip: TripDetails): Promise<void> 
   await page.goto('/trips/new');
   await expect(page.getByRole('heading', { name: 'New Trip' })).toBeVisible();
   await page.getByLabel('Trip name').fill(trip.name);
-  await chooseDestination(page, trip.typed ?? trip.destinationName, trip.destinationName);
+  await chooseDestination(page, trip.typed ?? trip.destinationName, trip.destinationName, trip.country);
   await page.getByLabel('Start date').fill(trip.startDate ?? daysFromToday(7));
   await page.getByLabel('End date').fill(trip.endDate ?? daysFromToday(10));
   await page.getByLabel('Adults').fill(trip.adults ?? '2');

@@ -2,8 +2,9 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { AccountService } from '../accounts/account-service';
 import { requireConfirmedEmail, requireTraveler } from '../accounts/require-traveler';
 import type { SessionService } from '../accounts/session-service';
-import { parseBody } from '../http/validation';
+import { parseBody, parseQuery } from '../http/validation';
 import { PLAN_CHANGE_NEEDS_CONFIRMATION, type WarnedPlanEffect } from '../../shared/plan-schemas';
+import { tripFilterSchema } from '../../shared/trip-filter';
 import { tripChangeRequestSchema, tripInputSchema } from '../../shared/trip-schemas';
 import { replyToRefusal } from '../plans/plan-refusals';
 import type { ChangeResult, TripChangeService } from './trip-change-service';
@@ -30,7 +31,11 @@ export async function tripRoutes(
   const confirmed = requireConfirmedEmail(deps.accounts);
   const ownerOf = (request: { accountId?: string }) => request.accountId ?? '';
 
-  app.get('/api/trips', { preHandler: loggedIn }, async (request) => ({ trips: trips.listForOwner(ownerOf(request)) }));
+  app.get('/api/trips', { preHandler: loggedIn }, async (request, reply) => {
+    const filter = await parseQuery(tripFilterSchema, request.query, reply);
+    if (!filter.ok) return;
+    return { trips: trips.listForOwner(ownerOf(request), filter.value) };
+  });
 
   app.post('/api/trips', { preHandler: [loggedIn, confirmed] }, async (request, reply) => {
     const body = await parseBody(tripInputSchema, request.body, reply);
