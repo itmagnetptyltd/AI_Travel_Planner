@@ -520,7 +520,13 @@
   title: A Traveler can save a Trip together with its generated Plan
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/save-reopen.spec.ts
+    - tests/api/plan-versions.http.spec.ts
+    - tests/unit/plan-service.test.ts
+    - tests/unit/plan-store.test.ts
+    - tests/unit/plan-view-state.test.ts
   version: 1
   source: BRD v1.0 §13 ("Users can save generated trips"); §30 FR-08; §27; §25 Release 1; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -539,7 +545,14 @@
   title: Reopening a saved Trip shows its Plan exactly as last saved
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/save-reopen.spec.ts
+    - tests/api/plan-versions.http.spec.ts
+    - tests/unit/plan-service.test.ts
+    - tests/unit/plan-store.test.ts
+    - tests/unit/plan-view-state.test.ts
+    - tests/unit/scripted-ai-service.test.ts
   version: 1
   source: BRD v1.0 §13 ("reopen them later"); §30 FR-08; §27 ("The user can save and reopen a trip"); clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -561,7 +574,10 @@
   title: Saved Trips persist across application restarts
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - tests/api/plan-versions.http.spec.ts
+    - tests/unit/plan-store.test.ts
   version: 1
   source: BRD v1.0 §22 Reliability ("saved trips must persist across application restarts"); §30 FR-08
   acceptance:
@@ -2508,7 +2524,11 @@
   title: A Trip whose dates have passed still opens with its Plan
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/save-reopen.spec.ts
+    - tests/api/plan-versions.http.spec.ts
+    - tests/unit/plan-store.test.ts
   version: 1
   source: CHG-0002; moved from REQ-TRV-012 v1 (BRD v1.0 §6; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0002 by developer confirmation 2026-09-25
   acceptance:

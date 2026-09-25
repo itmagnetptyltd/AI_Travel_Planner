@@ -74,4 +74,16 @@ describe('the scripted AI service used by the browser tests', () => {
 
     await expect(createScriptedAiService(file).complete(request())).rejects.toBeInstanceOf(AiUnavailableError);
   });
+
+  // @covers REQ-TRV-018@v1
+  test('puts the label from the script in front of every Activity title, so one Plan tells apart from another', async () => {
+    const reply = await createScriptedAiService(aScriptFile({ mode: 'ok', dayCount: 2, label: 'First idea' })).complete(request());
+
+    const result = parsePlanReply(reply.text, { ...TRIP, dayCount: 2 });
+
+    if (!result.ok) throw new Error(`Expected a Plan, got ${result.problem}`);
+    const titles = result.plan.days.flatMap((day) => day.activities.map((activity) => activity.title));
+    expect(titles).toHaveLength(6);
+    expect(titles.every((title) => title.startsWith('First idea: '))).toBe(true);
+  });
 });

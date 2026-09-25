@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 5174;
 export const E2E_OUTBOX_DIR = '.e2e/outbox';
+export const E2E_DATABASE_PATH = '.e2e/trv-e2e.sqlite';
 /** The browser tests write what the next AI request should do here (mode: ok, error or hang). */
 export const E2E_AI_SCRIPT_FILE = '.e2e/ai-script.json';
 /** Held by the e2e server only, so a test can prove it never reaches a page or script. */
@@ -28,7 +29,7 @@ export default defineConfig({
       PORT: String(PORT),
       HOST: '127.0.0.1',
       APP_BASE_URL: `http://127.0.0.1:${PORT}`,
-      DATABASE_PATH: '.e2e/trv-e2e.sqlite',
+      DATABASE_PATH: E2E_DATABASE_PATH,
       EMAIL_TRANSPORT: 'file',
       EMAIL_OUTBOX_DIR: E2E_OUTBOX_DIR,
       EMAIL_FROM: 'no-reply@example.test',
