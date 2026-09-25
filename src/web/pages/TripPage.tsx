@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { TripView } from '../../shared/trip-schemas';
 import { api } from '../api-client';
+import { PlanGenerator } from '../components/PlanGenerator';
 import { travelersLabel } from './trip-labels';
 
 type TripState =
@@ -53,6 +54,7 @@ export function TripPage() {
         <dd>{shown.status}</dd>
       </dl>
       <p>{`Travel style: ${shown.travelStyles.length === 0 ? 'Not set' : shown.travelStyles.join(', ')}`}</p>
+      <PlanGenerator tripId={shown.id} />
       <Link to={`/trips/${encodeURIComponent(shown.id)}/edit`}>Edit</Link>
       {isConfirmingDelete ? (
         <div role="group" aria-label="Confirm delete">

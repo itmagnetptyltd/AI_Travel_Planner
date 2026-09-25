@@ -6,6 +6,7 @@ import rateLimit from '@fastify/rate-limit';
 import fastifyStatic from '@fastify/static';
 import type { Clock } from './clock';
 import type { TrvDatabase } from './db/client';
+import type { AiService } from './ai/ai-service';
 import type { EmailService } from './email/email-service';
 import type { BreachedPasswordChecker } from './accounts/breached-password-checker';
 import { createAccountService } from './accounts/account-service';
@@ -13,16 +14,24 @@ import { createSessionService } from './accounts/session-service';
 import { accountRoutes } from './accounts/account-routes';
 import { profileRoutes } from './accounts/profile-routes';
 import { tripRoutes } from './trips/trip-routes';
+import { planRoutes } from './plans/plan-routes';
 import { createAdminAccountService } from './admin/admin-account-service';
 import { adminRoutes, type AdminRoute } from './admin/admin-routes';
 import { createDestinationService } from './destinations/destination-service';
 import { destinationRoutes } from './destinations/destination-routes';
 import { createTripService } from './trips/trip-service';
+import { createAiRecordService, scheduleTextPurge } from './plans/ai-record-service';
+import { createAiUsageLimitService } from './plans/ai-usage-limit-service';
+import { createPlanService, type PlanGenerationSettings } from './plans/plan-service';
+
+const AI_TEXT_PURGE_INTERVAL_MS = 60 * 60 * 1000;
 
 export interface AppDeps {
   readonly db: TrvDatabase;
   readonly clock: Clock;
   readonly email: EmailService;
+  readonly ai: AiService;
+  readonly planSettings: PlanGenerationSettings;
   readonly breachedPasswords: BreachedPasswordChecker;
   readonly appBaseUrl: string;
   readonly cookieSecure: boolean;
@@ -55,7 +64,21 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   const sessions = createSessionService(deps.db, deps.clock);
   const destinations = createDestinationService({ db: deps.db, clock: deps.clock });
   const trips = createTripService({ db: deps.db, clock: deps.clock });
+  const aiLimits = createAiUsageLimitService({ db: deps.db, clock: deps.clock });
+  const aiRecords = createAiRecordService({ db: deps.db, clock: deps.clock });
+  const plans = createPlanService({
+    db: deps.db,
+    clock: deps.clock,
+    ai: deps.ai,
+    trips,
+    limits: aiLimits,
+    settings: deps.planSettings,
+  });
   const adminAccounts = createAdminAccountService({ db: deps.db, clock: deps.clock, sessions });
+  const stopPurging = scheduleTextPurge(aiRecords, AI_TEXT_PURGE_INTERVAL_MS, (error) =>
+    app.log.error({ err: error }, 'Clearing expired AI text failed'),
+  );
+  app.addHook('onClose', async () => stopPurging());
   const registeredAdminRoutes: AdminRoute[] = [];
   app.decorate('adminRoutes', registeredAdminRoutes);
 
@@ -68,8 +91,9 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   });
   await profileRoutes(app, { accounts, sessions });
   await tripRoutes(app, { accounts, sessions, trips });
+  await planRoutes(app, { sessions, plans });
   await destinationRoutes(app, { sessions, destinations });
-  await adminRoutes(app, { accounts, sessions, adminAccounts, destinations, registeredRoutes: registeredAdminRoutes });
+  await adminRoutes(app, { accounts, sessions, adminAccounts, destinations, aiLimits, aiRecords, registeredRoutes: registeredAdminRoutes });
 
   if (deps.webRoot && existsSync(deps.webRoot)) {
     await serveWebApp(app, deps.webRoot);

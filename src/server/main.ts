@@ -1,5 +1,8 @@
 import { resolve } from 'node:path';
 import { buildApp } from './app';
+import { createAnthropicAiService } from './ai/anthropic-ai-service';
+import type { AiService } from './ai/ai-service';
+import { createScriptedAiService } from './ai/scripted-ai-service';
 import { systemClock } from './clock';
 import { loadConfig, type AppConfig } from './config';
 import { openDatabase } from './db/client';
@@ -21,12 +24,27 @@ function emailServiceFor(config: AppConfig): EmailService {
   });
 }
 
+function aiServiceFor(config: AppConfig): AiService {
+  if (config.AI_PROVIDER === 'scripted') {
+    return createScriptedAiService(config.AI_SCRIPT_FILE ?? '');
+  }
+  return createAnthropicAiService({ apiKey: config.AI_API_KEY ?? '', model: config.AI_MODEL ?? '' });
+}
+
 const config = loadConfig(process.env);
 const { db } = openDatabase(config.DATABASE_PATH);
 const app = await buildApp({
   db,
   clock: systemClock,
   email: emailServiceFor(config),
+  ai: aiServiceFor(config),
+  planSettings: {
+    timeoutMs: config.AI_TIMEOUT_MS,
+    destinationTextMaxChars: config.AI_DESTINATION_TEXT_MAX_CHARS,
+    maxOutputTokens: config.AI_MAX_OUTPUT_TOKENS,
+    inputCostMicroUsdPerMTok: config.AI_INPUT_COST_MICRO_USD_PER_MTOK ?? 0,
+    outputCostMicroUsdPerMTok: config.AI_OUTPUT_COST_MICRO_USD_PER_MTOK ?? 0,
+  },
   breachedPasswords: loadBundledBreachedPasswordChecker(),
   appBaseUrl: config.APP_BASE_URL,
   cookieSecure: config.COOKIE_SECURE,

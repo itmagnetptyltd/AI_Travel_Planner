@@ -232,15 +232,13 @@
   title: A Traveler's profile information is never returned to another Traveler
   module: TRV
   priority: must
-  status: draft
+  status: agreed
   version: 1
-  source: BRD v1.0 §22 Security ("protect ... personal information")
+  source: 'BRD v1.0 §22 Security ("protect ... personal information"); clarified by client confirmation relayed in session 2026-09-23 (privacy answer in ANSWERS.md); developer decision 2026-09-25: that answer adds no behaviour to this requirement, so it is agreed as written'
   acceptance:
     - given: Traveler X has a profile and Traveler Y is logged in
       when: Y requests X's profile by X's identifier
       then: The response is 404 and carries none of X's profile fields
-  ambiguities:
-    - "Which privacy law or policy must the application follow, and must Travelers be able to delete their own account and data?"
   depends_on: [REQ-TRV-009]
   belts: [A, C]
 
@@ -718,7 +716,16 @@
   title: The AI generates a Plan with one Day for every date from the Trip's start date to its end date
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/plan-generation.spec.ts
+    - tests/api/plans.http.spec.ts
+    - tests/unit/config.test.ts
+    - tests/unit/plan-prompt.test.ts
+    - tests/unit/plan-reply.test.ts
+    - tests/unit/plan-service.test.ts
+    - tests/unit/plan-view-state.test.ts
+    - tests/unit/scripted-ai-service.test.ts
   version: 1
   source: BRD v1.0 §8 ("generates a day-by-day itinerary"); §30 FR-04; §27; §25 Release 1; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -790,7 +797,11 @@
   title: Every Activity in a generated Plan carries a time, duration, estimated cost, location and reason
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - tests/api/plans.http.spec.ts
+    - tests/unit/plan-reply.test.ts
+    - tests/unit/plan-service.test.ts
   version: 1
   source: BRD v1.0 §8 ("suggested activities, times, durations, estimated costs, locations and reasons for recommendations"); §30 FR-04; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -843,16 +854,25 @@
   title: When the AI fails, the Traveler sees a clear fallback message and the Trip is left unchanged
   module: TRV
   priority: must
-  status: agreed
-  version: 1
-  source: BRD v1.0 §29 ("AI failures should have a clear fallback message"); §30 FR-04; clarified by client confirmation relayed in session 2026-09-23
+  status: verified
+  verified_by:
+    - e2e/plan-generation.spec.ts
+    - tests/api/plans.http.spec.ts
+    - tests/unit/plan-service.test.ts
+    - tests/unit/plan-view-state.test.ts
+    - tests/unit/scripted-ai-service.test.ts
+  version: 2
+  history:
+    - version: 1
+      agreed: 2026-09-23
+      superseded_by: 2
+      summary: >-
+        v1 also held two criteria that need later slices: an AI error on regenerating
+        a Trip with a saved Plan leaves that Plan displayed (moved unchanged to
+        REQ-TRV-102 by CHG-0003, slice 7), and an AI error on a chat message shows the
+        unavailable message in the chat (moved unchanged to REQ-TRV-104, slice 8).
+  source: BRD v1.0 §29 ("AI failures should have a clear fallback message"); §30 FR-04; clarified by client confirmation relayed in session 2026-09-23; re-agreed after CHG-0003 by developer confirmation 2026-09-25
   acceptance:
-    - given: A Trip with a saved Plan and an AI service that returns an error
-      when: The Traveler asks for the Plan to be regenerated
-      then: A message saying the AI is unavailable is shown and the previously saved Plan is still displayed
-    - given: An AI service that returns an error
-      when: The Traveler sends a chat message
-      then: A message saying the AI is unavailable is shown in the chat
     - given: An AI service that returns an error, and a Trip with no Plan
       when: The Traveler opens the Trip
       then: >-
@@ -864,18 +884,25 @@
   title: Features that do not need the AI keep working while the AI is unavailable
   module: TRV
   priority: must
-  status: agreed
-  version: 1
-  source: BRD v1.0 §29 ("rather than blocking the entire application"); clarified by client confirmation relayed in session 2026-09-23
+  status: verified
+  verified_by:
+    - e2e/plan-generation.spec.ts
+    - tests/api/plans.http.spec.ts
+    - tests/unit/scripted-ai-service.test.ts
+  version: 2
+  history:
+    - version: 1
+      agreed: 2026-09-23
+      superseded_by: 2
+      summary: >-
+        v1 also held a criterion that edits, removes and moves Activities while the AI
+        does not respond. It needs the edit, remove and move features (slice 7), so
+        CHG-0003 moved it unchanged to REQ-TRV-103.
+  source: BRD v1.0 §29 ("rather than blocking the entire application"); clarified by client confirmation relayed in session 2026-09-23; re-agreed after CHG-0003 by developer confirmation 2026-09-25
   acceptance:
     - given: An AI service that does not respond
       when: A Traveler opens their list of Trips and then a saved Trip
       then: Both pages load and show the saved data
-    - given: An AI service that does not respond, and a saved Trip with a Plan
-      when: >-
-        The Traveler edits one Activity, removes another and moves a third to another
-        Day
-      then: All three changes are saved and shown when the Trip is reopened
   depends_on: [REQ-TRV-029]
   belts: [A, B, C]
 
@@ -883,7 +910,10 @@
   title: AI-generated content in the application is labelled as a recommendation, not a confirmed booking
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/plan-generation.spec.ts
+    - tests/unit/plan-view-state.test.ts
   version: 1
   source: BRD v1.0 §21 ("clearly identified as recommendations rather than confirmed bookings"); §29
   acceptance:
@@ -918,17 +948,24 @@
   title: Requests sent to the AI do not contain the Traveler's account email address
   module: TRV
   priority: must
-  status: agreed
-  version: 1
-  source: BRD v1.0 §29 ("Sensitive personal information should not be unnecessarily included in AI prompts"); §30 FR-04; clarified by client confirmation relayed in session 2026-09-23
+  status: verified
+  verified_by:
+    - tests/api/plans.http.spec.ts
+    - tests/unit/plan-service.test.ts
+  version: 2
+  history:
+    - version: 1
+      agreed: 2026-09-23
+      superseded_by: 2
+      summary: >-
+        v1 also held a criterion that a chat request does not contain the account email
+        address. It needs the chat (slice 8), so CHG-0003 moved it unchanged to
+        REQ-TRV-105.
+  source: BRD v1.0 §29 ("Sensitive personal information should not be unnecessarily included in AI prompts"); §30 FR-04; clarified by client confirmation relayed in session 2026-09-23; re-agreed after CHG-0003 by developer confirmation 2026-09-25
   acceptance:
     - given: A Traveler registered as traveler@example.com with a Trip
       when: A Plan is generated with the AI service replaced by a test double
       then: The request received by the test double does not contain traveler@example.com
-    - given: A Traveler registered as traveler@example.com with a Trip
-      when: A chat message is sent with the AI service replaced by a test double
-      then: >-
-        The request received by the test double does not contain traveler@example.com
   depends_on: [REQ-TRV-026]
   belts: [A]
 
@@ -936,7 +973,13 @@
   title: AI requests and replies are logged only as the agreed retention rules allow
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/ai-usage.spec.ts
+    - tests/api/ai-records.http.spec.ts
+    - tests/unit/ai-record-retention-schedule.test.ts
+    - tests/unit/ai-record-service.test.ts
+    - tests/unit/plan-service.test.ts
   version: 1
   source: BRD v1.0 §29 ("logged only according to the application's privacy and retention requirements"); §30 FR-04; clarified by client confirmation relayed in session 2026-09-23
   rationale: >-
@@ -1194,7 +1237,10 @@
   title: A Traveler can view an Activity's details, including why it was recommended
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/plan-generation.spec.ts
+    - tests/unit/plan-view-state.test.ts
   version: 1
   source: BRD v1.0 §12 ("view"); §26 ("Show me why the AI recommended this activity"); §30 FR-06
   acceptance:
@@ -2204,7 +2250,10 @@
   title: The AI and email providers are reached only through their own dedicated service layers
   module: TRV
   priority: should
-  status: agreed
+  status: verified
+  verified_by:
+    - tests/unit/anthropic-ai-service.test.ts
+    - tests/unit/service-layer-boundaries.test.ts
   version: 1
   source: BRD v1.0 §22 Maintainability ("separate UI, business logic, database, AI integration and email services"); §23 (rationale only)
   acceptance:
@@ -2341,7 +2390,11 @@
   title: A Traveler past the daily Plan generation limit is refused with the reset time
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/ai-usage.spec.ts
+    - tests/api/plans.http.spec.ts
+    - tests/unit/plan-service.test.ts
   version: 1
   source: CHG-0001; moved from REQ-TRV-068 v1 (BRD v1.0 §18; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0001 by developer confirmation 2026-09-24
   acceptance:
@@ -2566,3 +2619,62 @@
         and status, and carries no Days or Activities
   depends_on: [REQ-TRV-007, REQ-TRV-017, REQ-TRV-068]
   belts: [A, B, C]
+
+- id: REQ-TRV-102
+  title: When the AI fails while regenerating, the Trip's saved Plan stays displayed
+  module: TRV
+  priority: must
+  status: agreed
+  version: 1
+  source: CHG-0003; moved from REQ-TRV-029 v1 (BRD v1.0 §29 ("AI failures should have a clear fallback message"); §30 FR-04; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0003 by developer confirmation 2026-09-25
+  acceptance:
+    - given: A Trip with a saved Plan and an AI service that returns an error
+      when: The Traveler asks for the Plan to be regenerated
+      then: A message saying the AI is unavailable is shown and the previously saved Plan is still displayed
+  depends_on: [REQ-TRV-029, REQ-TRV-017, REQ-TRV-041]
+  belts: [A, B, C]
+
+- id: REQ-TRV-103
+  title: Editing, removing and moving Activities keep working while the AI is unavailable
+  module: TRV
+  priority: must
+  status: agreed
+  version: 1
+  source: CHG-0003; moved from REQ-TRV-030 v1 (BRD v1.0 §29 ("rather than blocking the entire application"); clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0003 by developer confirmation 2026-09-25
+  acceptance:
+    - given: An AI service that does not respond, and a saved Trip with a Plan
+      when: >-
+        The Traveler edits one Activity, removes another and moves a third to another
+        Day
+      then: All three changes are saved and shown when the Trip is reopened
+  depends_on: [REQ-TRV-030, REQ-TRV-045, REQ-TRV-046, REQ-TRV-048]
+  belts: [A, B, C]
+
+- id: REQ-TRV-104
+  title: When the AI fails, the chat shows that the AI is unavailable
+  module: TRV
+  priority: must
+  status: agreed
+  version: 1
+  source: CHG-0003; moved from REQ-TRV-029 v1 (BRD v1.0 §29 ("AI failures should have a clear fallback message"); §30 FR-04; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0003 by developer confirmation 2026-09-25
+  acceptance:
+    - given: An AI service that returns an error
+      when: The Traveler sends a chat message
+      then: A message saying the AI is unavailable is shown in the chat
+  depends_on: [REQ-TRV-029, REQ-TRV-035]
+  belts: [A, B, C]
+
+- id: REQ-TRV-105
+  title: Chat requests sent to the AI do not contain the Traveler's account email address
+  module: TRV
+  priority: must
+  status: agreed
+  version: 1
+  source: CHG-0003; moved from REQ-TRV-033 v1 (BRD v1.0 §29 ("Sensitive personal information should not be unnecessarily included in AI prompts"); §30 FR-04; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0003 by developer confirmation 2026-09-25
+  acceptance:
+    - given: A Traveler registered as traveler@example.com with a Trip
+      when: A chat message is sent with the AI service replaced by a test double
+      then: >-
+        The request received by the test double does not contain traveler@example.com
+  depends_on: [REQ-TRV-033, REQ-TRV-035]
+  belts: [A]

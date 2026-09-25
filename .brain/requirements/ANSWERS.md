@@ -345,3 +345,15 @@ _CHG-0001 moved 9 acceptance criteria, word for word, out of REQ-TRV-068, 071, 0
 _CHG-0002 moved 13 acceptance criteria, word for word, out of REQ-TRV-007, 011, 012, 014 and 015 into new requirements REQ-TRV-096 to 101, so that each requirement can be tested in the slice that builds it (slices 5, 6, 7, 8 and 12). Are the regrouped requirements agreed, and is the change absorbed, varied, deferred or declined?_
 
 **From the developer** (Kartik Chandra Biswas), session 2026-09-25: agreed as absorbed. No criterion's wording changed and no scope was added or removed; the client confirmed every moved criterion on 2026-09-23 as part of the v1 text. The client is to be informed of the regrouping in the next report, not asked first.
+
+## REQ-TRV-008: does the privacy answer change this requirement?
+
+_The client's privacy answer (Australian Privacy Act, account deletion, data export, privacy notice) closed the "Privacy obligations" question on 2026-09-23 but added no behaviour to REQ-TRV-008, which only says another Traveler's profile request gets 404. Should it stay a draft?_
+
+**From the developer** (Kartik Chandra Biswas), session 2026-09-25: no. The answer does not apply to REQ-TRV-008, which is agreed as written and unchanged at v1. The rest of that answer is not covered by any requirement: account deletion (profile, Trips, Plans and chat removed within 30 days, feedback anonymised) and the JSON export of a Traveler's Trips have no requirement or slice. Only the privacy notice is covered (REQ-TRV-001). They need `/decompose` or `/change-record` to be allocated.
+
+## CHG-0003: regrouping slice 4 criteria across slices
+
+_CHG-0003 moved 4 acceptance criteria, word for word, out of REQ-TRV-029, 030 and 033 into new requirements REQ-TRV-102 to 105, so that each requirement can be tested in the slice that builds it (slices 7 and 8). Are the regrouped requirements agreed, and is the change absorbed, varied, deferred or declined?_
+
+**From the developer** (Kartik Chandra Biswas), session 2026-09-25: agreed as absorbed. No criterion's wording changed and no scope was added or removed; the client confirmed every moved criterion on 2026-09-23 as part of the v1 text. The client is to be informed of the regrouping in the next report, not asked first.

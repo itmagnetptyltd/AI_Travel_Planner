@@ -1,5 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { RequireAdministrator, RequireSession } from './require-session';
+import { AdminAiRequestPage } from './pages/admin/AdminAiRequestPage';
+import { AdminAiRequestsPage } from './pages/admin/AdminAiRequestsPage';
+import { AdminAiUsageLimitsPage } from './pages/admin/AdminAiUsageLimitsPage';
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 import { AdminDestinationsPage } from './pages/admin/AdminDestinationsPage';
 import { AdminUserPage } from './pages/admin/AdminUserPage';
@@ -37,6 +40,9 @@ export function App() {
         <Route path="/admin/users" element={<RequireAdministrator><AdminUsersPage /></RequireAdministrator>} />
         <Route path="/admin/users/:id" element={<RequireAdministrator><AdminUserPage /></RequireAdministrator>} />
         <Route path="/admin/destinations" element={<RequireAdministrator><AdminDestinationsPage /></RequireAdministrator>} />
+        <Route path="/admin/ai-usage-limits" element={<RequireAdministrator><AdminAiUsageLimitsPage /></RequireAdministrator>} />
+        <Route path="/admin/ai-requests" element={<RequireAdministrator><AdminAiRequestsPage /></RequireAdministrator>} />
+        <Route path="/admin/ai-requests/:id" element={<RequireAdministrator><AdminAiRequestPage /></RequireAdministrator>} />
         <Route path="*" element={<Navigate to="/trips" replace />} />
       </Routes>
     </BrowserRouter>

@@ -68,13 +68,13 @@
   name: Edit and regenerate
   branch: feat/trv-edit-regenerate
   why: "A Traveler edits, removes, replaces and moves Activities, and regenerates the whole Plan or one Day"
-  covers: [REQ-TRV-041, REQ-TRV-042, REQ-TRV-043, REQ-TRV-045, REQ-TRV-046, REQ-TRV-047, REQ-TRV-048, REQ-TRV-094, REQ-TRV-098]
+  covers: [REQ-TRV-041, REQ-TRV-042, REQ-TRV-043, REQ-TRV-045, REQ-TRV-046, REQ-TRV-047, REQ-TRV-048, REQ-TRV-094, REQ-TRV-098, REQ-TRV-102, REQ-TRV-103]
 
 - id: 8
   name: AI chat
   branch: feat/trv-chat
   why: "A chat box on the Trip answers questions and proposes Plan changes the Traveler previews and accepts"
-  covers: [REQ-TRV-035, REQ-TRV-036, REQ-TRV-037, REQ-TRV-038, REQ-TRV-039, REQ-TRV-040, REQ-TRV-099]
+  covers: [REQ-TRV-035, REQ-TRV-036, REQ-TRV-037, REQ-TRV-038, REQ-TRV-039, REQ-TRV-040, REQ-TRV-099, REQ-TRV-104, REQ-TRV-105]
 
 - id: 9
   name: Search and filter Trips
@@ -111,3 +111,15 @@
   branch: feat/trv-performance
   why: "Pages, Plan generation and chat meet the agreed times with 25 simultaneous users"
   covers: [REQ-TRV-080]
+
+- id: 15
+  name: Out-of-scope guards
+  branch: feat/trv-out-of-scope
+  why: "None of the nine excluded features (weather, flights and hotels, maps, calendar, multi-language, voice, mobile app, risk notifications, booking) appears in the application"
+  covers: [REQ-TRV-082, REQ-TRV-083, REQ-TRV-084, REQ-TRV-085, REQ-TRV-086, REQ-TRV-087, REQ-TRV-088, REQ-TRV-089, REQ-TRV-090]
+
+- id: 16
+  name: Profile privacy
+  branch: feat/trv-profile-privacy
+  why: "One Traveler asking for another Traveler's profile gets a 404 with none of that profile's fields"
+  covers: [REQ-TRV-008]

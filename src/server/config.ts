@@ -17,6 +17,16 @@ const configSchema = z
     EMAIL_OUTBOX_DIR: z.string().optional(),
     COOKIE_SECURE: booleanFromString.default(true),
     AUTH_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(20),
+    NODE_ENV: z.string().optional(),
+    AI_PROVIDER: z.enum(['anthropic', 'scripted']),
+    AI_API_KEY: z.string().min(1).optional(),
+    AI_MODEL: z.string().min(1).optional(),
+    AI_SCRIPT_FILE: z.string().min(1).optional(),
+    AI_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
+    AI_MAX_OUTPUT_TOKENS: z.coerce.number().int().positive().default(16_000),
+    AI_DESTINATION_TEXT_MAX_CHARS: z.coerce.number().int().positive().default(2_000),
+    AI_INPUT_COST_MICRO_USD_PER_MTOK: z.coerce.number().int().nonnegative().optional(),
+    AI_OUTPUT_COST_MICRO_USD_PER_MTOK: z.coerce.number().int().nonnegative().optional(),
   })
   .superRefine((value, ctx) => {
     if (value.EMAIL_TRANSPORT === 'smtp' && !value.SMTP_HOST) {
@@ -24,6 +34,21 @@ const configSchema = z
     }
     if (value.EMAIL_TRANSPORT === 'file' && !value.EMAIL_OUTBOX_DIR) {
       ctx.addIssue({ code: 'custom', path: ['EMAIL_OUTBOX_DIR'], message: 'required when EMAIL_TRANSPORT=file' });
+    }
+    if (value.AI_PROVIDER === 'anthropic') {
+      for (const name of ['AI_API_KEY', 'AI_MODEL', 'AI_INPUT_COST_MICRO_USD_PER_MTOK', 'AI_OUTPUT_COST_MICRO_USD_PER_MTOK'] as const) {
+        if (value[name] === undefined) {
+          ctx.addIssue({ code: 'custom', path: [name], message: 'required when AI_PROVIDER=anthropic' });
+        }
+      }
+    }
+    if (value.AI_PROVIDER === 'scripted') {
+      if (!value.AI_SCRIPT_FILE) {
+        ctx.addIssue({ code: 'custom', path: ['AI_SCRIPT_FILE'], message: 'required when AI_PROVIDER=scripted' });
+      }
+      if (value.NODE_ENV !== 'test') {
+        ctx.addIssue({ code: 'custom', path: ['AI_PROVIDER'], message: 'scripted is for tests and needs NODE_ENV=test' });
+      }
     }
   });
 

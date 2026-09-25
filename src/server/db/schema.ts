@@ -1,4 +1,5 @@
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { AI_REQUEST_KINDS, AI_REQUEST_STATUSES } from '../../shared/ai-limits';
 import { CURRENCIES } from '../../shared/currencies';
 import type { TravelStyle } from '../../shared/travel-styles';
 import { TRIP_STATUSES } from '../../shared/trip-schemas';
@@ -88,4 +89,34 @@ export const auditLog = sqliteTable('audit_log', {
   subjectType: text('subject_type').notNull(),
   subjectId: text('subject_id').notNull(),
   occurredAt: integer('occurred_at', { mode: 'timestamp_ms' }).notNull(),
+});
+
+/**
+ * One row per request sent to the AI. The text columns are cleared after 30 days (REQ-TRV-034);
+ * the counts and cost stay, so the daily limit and the usage figures survive. There is no foreign
+ * key to the account or Trip, so deleting either never deletes the usage record.
+ */
+export const aiRequests = sqliteTable(
+  'ai_requests',
+  {
+    id: text('id').primaryKey(),
+    accountId: text('account_id').notNull(),
+    tripId: text('trip_id').notNull(),
+    kind: text('kind', { enum: AI_REQUEST_KINDS }).notNull(),
+    status: text('status', { enum: AI_REQUEST_STATUSES }).notNull(),
+    requestText: text('request_text'),
+    replyText: text('reply_text'),
+    inputTokens: integer('input_tokens').notNull(),
+    outputTokens: integer('output_tokens').notNull(),
+    costMicroUsd: integer('cost_micro_usd').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [index('ai_requests_account_kind_created_idx').on(table.accountId, table.kind, table.createdAt)],
+);
+
+/** Settings an Administrator changes while the application runs. Values are JSON text. */
+export const appSettings = sqliteTable('app_settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 });
