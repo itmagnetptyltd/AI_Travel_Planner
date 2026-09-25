@@ -13,9 +13,10 @@ The client's brief is in `.brain/requirements/BRIEF.md`. The requirements are in
   out, reset a password and edit their profile preferences.
 - **Admin and Destinations.** Administrators manage users and the Destination
   list. Travelers can search Destinations.
-- **Trips.** In progress on `feat/trv-trips`.
+- **Trips.** Travelers create, list, edit and delete their own Trips.
+- **AI Plan generation.** In progress on `feat/trv-plan-generation`: a Traveler can ask the AI for a day-by-day Plan, labelled as a recommendation, with a fallback message when the AI fails.
 
-AI plan generation, saved plans, chat, email and feedback come in later slices.
+Saved plans, chat, email and feedback come in later slices.
 For current status, open `.claude/reports/dashboard.html` or run `/dashboard`.
 
 ## Stack
@@ -92,6 +93,14 @@ refuses to start and names the problem, without printing the value.
 | `EMAIL_OUTBOX_DIR` | when `file` | | |
 | `COOKIE_SECURE` | no | `true` | Set to `false` only for local HTTP |
 | `AUTH_RATE_LIMIT_PER_MINUTE` | no | `20` | |
+| `AI_PROVIDER` | yes | | `anthropic`, or `scripted` for the browser tests (only starts when `NODE_ENV=test`) |
+| `AI_API_KEY` | when `anthropic` | | Held server-side only |
+| `AI_MODEL` | when `anthropic` | | The model id your account uses |
+| `AI_INPUT_COST_MICRO_USD_PER_MTOK`, `AI_OUTPUT_COST_MICRO_USD_PER_MTOK` | when `anthropic` | | Millionths of a US dollar per million tokens, so cost can be recorded |
+| `AI_SCRIPT_FILE` | when `scripted` | | JSON file the browser tests write to say what the next AI request does |
+| `AI_TIMEOUT_MS` | no | `120000` | A Plan not back by then shows the fallback message |
+| `AI_MAX_OUTPUT_TOKENS` | no | `16000` | |
+| `AI_DESTINATION_TEXT_MAX_CHARS` | no | `2000` | Each Destination text sent to the AI is cut to this length |
 
 Never commit `.env`. Keep real secrets out of `.env.example`.
 

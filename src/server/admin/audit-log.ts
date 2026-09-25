@@ -3,7 +3,15 @@ import type { Clock } from '../clock';
 import type { TrvDatabase } from '../db/client';
 import { auditLog } from '../db/schema';
 
-export type AuditAction = 'account.promoted' | 'account.demoted' | 'account.disabled' | 'account.enabled';
+const SUBJECT_TYPE_OF_ACTION = {
+  'account.promoted': 'account',
+  'account.demoted': 'account',
+  'account.disabled': 'account',
+  'account.enabled': 'account',
+  'ai-request.viewed': 'ai-request',
+} as const;
+
+export type AuditAction = keyof typeof SUBJECT_TYPE_OF_ACTION;
 
 /** Accepts the database or an open transaction, so an entry commits with the change it records. */
 export function recordAudit(
@@ -16,7 +24,7 @@ export function recordAudit(
       id: randomUUID(),
       actorAccountId: entry.actorAccountId,
       action: entry.action,
-      subjectType: 'account',
+      subjectType: SUBJECT_TYPE_OF_ACTION[entry.action],
       subjectId: entry.subjectId,
       occurredAt: clock.now(),
     })

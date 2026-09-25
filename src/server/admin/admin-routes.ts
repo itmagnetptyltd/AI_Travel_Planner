@@ -6,7 +6,10 @@ import type { SessionService } from '../accounts/session-service';
 import type { DestinationService } from '../destinations/destination-service';
 import { parseBody } from '../http/validation';
 import { ADMIN_FUNCTIONS, ROLES } from '../../shared/admin-functions';
+import { aiUsageLimitsSchema } from '../../shared/ai-limits';
 import { destinationInputSchema, destinationUpdateSchema } from '../../shared/destination-schemas';
+import type { AiRecordService } from '../plans/ai-record-service';
+import type { AiUsageLimitService } from '../plans/ai-usage-limit-service';
 import { accountActions, type AdminAccountService } from './admin-account-service';
 import { requireAdministrator } from './require-administrator';
 
@@ -25,6 +28,8 @@ export interface AdminRouteDeps {
   readonly sessions: SessionService;
   readonly adminAccounts: AdminAccountService;
   readonly destinations: DestinationService;
+  readonly aiLimits: AiUsageLimitService;
+  readonly aiRecords: AiRecordService;
   /** Filled with every route registered here, so a test can prove each one is guarded. */
   readonly registeredRoutes: AdminRoute[];
 }
@@ -65,6 +70,7 @@ export async function adminRoutes(app: FastifyInstance, deps: AdminRouteDeps): P
     scope.get('/api/admin/dashboard', async () => ({ functions: ADMIN_FUNCTIONS }));
     registerAccountRoutes(scope, deps);
     registerDestinationRoutes(scope, deps);
+    registerAiRoutes(scope, deps);
   });
 }
 
@@ -142,4 +148,24 @@ function registerDestinationRoutes(scope: FastifyInstance, deps: AdminRouteDeps)
     }
     return removal === 'removed' ? reply.code(204).send() : notFound(reply, 'Destination');
   });
+}
+
+function registerAiRoutes(scope: FastifyInstance, deps: AdminRouteDeps): void {
+  const { aiLimits, aiRecords } = deps;
+  const currentLimits = () => ({ dailyPlanGenerationLimit: aiLimits.getDailyPlanGenerationLimit() });
+
+  scope.get('/api/admin/ai-usage-limits', async () => currentLimits());
+
+  scope.put('/api/admin/ai-usage-limits', async (request, reply) => {
+    const body = await parseBody(aiUsageLimitsSchema, request.body, reply);
+    if (!body.ok) return;
+    aiLimits.setDailyPlanGenerationLimit(body.value.dailyPlanGenerationLimit);
+    return currentLimits();
+  });
+
+  scope.get('/api/admin/ai-requests', async () => ({ requests: aiRecords.list() }));
+
+  scope.get<{ Params: IdParams }>('/api/admin/ai-requests/:id', async (request, reply) =>
+    aiRecords.viewForAdmin(request.accountId ?? '', request.params.id) ?? notFound(reply, 'AI request'),
+  );
 }

@@ -1,0 +1,68 @@
+import { mkdir, writeFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
+import { expect, type Browser, type Page } from '@playwright/test';
+import { E2E_AI_SCRIPT_FILE } from '../../playwright.config';
+import { uniqueName } from './admin-journeys';
+import { aConfirmedTravelerOnTrips, aDestinationAddedByAdministrator, createTripThroughUi, daysFromToday, openTrip } from './trip-journeys';
+
+export interface AiScript {
+  readonly mode: 'ok' | 'error' | 'hang';
+  readonly dayCount?: number;
+}
+
+/** Tells the e2e server's scripted AI what the next request should do. Tests run one at a time, so one file is safe. */
+export async function setAiScript(script: AiScript): Promise<void> {
+  await mkdir(dirname(E2E_AI_SCRIPT_FILE), { recursive: true });
+  await writeFile(E2E_AI_SCRIPT_FILE, JSON.stringify(script));
+}
+
+/** The default Trip form dates give a 4-Day Trip, starting a week from today. */
+export const TRIP_DAY_COUNT = 4;
+export const TRIP_START = () => daysFromToday(7);
+
+export interface TripReadyToPlan {
+  readonly page: Page;
+  readonly tripName: string;
+  readonly destinationName: string;
+  readonly admin: Page;
+}
+
+/** A confirmed Traveler with a saved 4-Day Trip open on its page, and the AI set to answer. */
+export async function aTripReadyToPlan(browser: Browser, label: string): Promise<TripReadyToPlan> {
+  await setAiScript({ mode: 'ok', dayCount: TRIP_DAY_COUNT });
+  const { name: destinationName, admin } = await aDestinationAddedByAdministrator(browser, 'Kyoto');
+  const page = await aConfirmedTravelerOnTrips(browser, label);
+  const tripName = uniqueName('Plan Trip');
+  await createTripThroughUi(page, { name: tripName, destinationName });
+  await openTrip(page, tripName);
+  return { page, tripName, destinationName, admin };
+}
+
+export async function generatePlan(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Generate Plan' }).click();
+}
+
+/**
+ * Every attempt a page makes to reach anywhere but the application's own address. The application's
+ * Content-Security-Policy stops such a request before the network sees it, so an attempt is also
+ * counted when it fails or is reported as a policy violation.
+ */
+export function trackForeignRequests(page: Page, ownOrigin: string): () => string[] {
+  const foreign: string[] = [];
+  const noteIfForeign = (requestUrl: string) => {
+    const url = new URL(requestUrl);
+    if (url.origin !== ownOrigin && url.protocol.startsWith('http')) foreign.push(requestUrl);
+  };
+  page.on('request', (request) => noteIfForeign(request.url()));
+  page.on('requestfailed', (request) => noteIfForeign(request.url()));
+  page.on('console', (message) => {
+    if (/content security policy/i.test(message.text())) foreign.push(`blocked by policy: ${message.text()}`);
+  });
+  return () => [...foreign];
+}
+
+export async function expectDaysShown(page: Page): Promise<void> {
+  for (let index = 0; index < TRIP_DAY_COUNT; index += 1) {
+    await expect(page.getByRole('heading', { name: `Day ${index + 1}, ${daysFromToday(7 + index)}` })).toBeVisible();
+  }
+}
