@@ -1,6 +1,7 @@
-import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { AI_REQUEST_KINDS, AI_REQUEST_STATUSES } from '../../shared/ai-limits';
 import { CURRENCIES } from '../../shared/currencies';
+import { PLAN_VERSION_SOURCES } from '../../shared/plan-schemas';
 import type { TravelStyle } from '../../shared/travel-styles';
 import { TRIP_STATUSES } from '../../shared/trip-schemas';
 
@@ -79,6 +80,26 @@ export const trips = sqliteTable(
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
   },
   (table) => [index('trips_owner_deleted_idx').on(table.ownerAccountId, table.deletedAt)],
+);
+
+/**
+ * One row per saved version of a Trip's Plan. `plan_json` is a snapshot of the whole Plan, so every
+ * version stands on its own and restoring one is a copy. Version numbers only go up and are never
+ * reused; at most ten versions of a Trip are kept.
+ */
+export const planVersions = sqliteTable(
+  'plan_versions',
+  {
+    id: text('id').primaryKey(),
+    tripId: text('trip_id')
+      .notNull()
+      .references(() => trips.id, { onDelete: 'cascade' }),
+    versionNumber: integer('version_number').notNull(),
+    source: text('source', { enum: PLAN_VERSION_SOURCES }).notNull(),
+    planJson: text('plan_json').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [uniqueIndex('plan_versions_trip_version_idx').on(table.tripId, table.versionNumber)],
 );
 
 /** Only ever added to; rows are never updated or deleted. */

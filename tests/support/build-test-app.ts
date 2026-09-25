@@ -17,6 +17,8 @@ export interface TestApp {
   readonly clock: FixedClock;
   readonly email: CapturingEmailService;
   readonly ai: AiDouble;
+  /** Stops the application and closes its database. Safe to call more than once. */
+  readonly stop: () => Promise<void>;
 }
 
 export const TEST_PLAN_SETTINGS: PlanGenerationSettings = {
@@ -34,9 +36,11 @@ export async function buildTestApp(
     readonly planSettings?: Partial<PlanGenerationSettings>;
     /** Runs against the migrated database before the application starts. */
     readonly seed?: (db: TrvDatabase) => void;
+    /** A database file to use instead of a throwaway one, so a test can stop and start the application over it. */
+    readonly databasePath?: string;
   } = {},
 ): Promise<TestApp> {
-  const { db, close } = openDatabase(':memory:');
+  const { db, close } = openDatabase(options.databasePath ?? ':memory:');
   const clock = aFixedClock(options.now);
   const email = aCapturingEmailService();
   const ai = anAiDouble();
@@ -52,11 +56,15 @@ export async function buildTestApp(
     cookieSecure: false,
     authRateLimitPerMinute: 1000,
   });
-  onTestFinished(async () => {
+  let isStopped = false;
+  const stop = async () => {
+    if (isStopped) return;
+    isStopped = true;
     await app.close();
     close();
-  });
-  return { app, db, clock, email, ai };
+  };
+  onTestFinished(stop);
+  return { app, db, clock, email, ai, stop };
 }
 
 export function aTestDatabase(): TrvDatabase {

@@ -10,6 +10,8 @@ import { AiUnavailableError, type AiReply, type AiService } from './ai-service';
 const scriptSchema = z.object({
   mode: z.enum(['ok', 'error', 'hang']).default('ok'),
   dayCount: z.number().int().min(1).max(14).default(8),
+  /** Put in front of every Activity title, so a test can tell one generated Plan from another. */
+  label: z.string().max(60).optional(),
 });
 
 type Script = z.infer<typeof scriptSchema>;
@@ -34,11 +36,12 @@ const ACTIVITIES = [
   { title: 'Evening stroll through the old town', startTime: '18:00', category: 'Activities', estimatedCost: 0 },
 ] as const;
 
-function planText(dayCount: number): string {
+function planText(dayCount: number, label: string | undefined): string {
   const days = Array.from({ length: dayCount }, (_, index) => ({
     dayNumber: index + 1,
     activities: ACTIVITIES.map((activity) => ({
       ...activity,
+      title: label ? `${label}: ${activity.title}` : activity.title,
       durationMinutes: 90,
       location: 'City centre',
       reason: `A well-loved way to spend part of day ${index + 1}.`,
@@ -57,7 +60,7 @@ export function createScriptedAiService(scriptFile: string): AiService {
           request.signal.addEventListener('abort', () => reject(new AiUnavailableError('The scripted AI never answered.')));
         });
       }
-      return { text: planText(script.dayCount), inputTokens: 500, outputTokens: 1_500 };
+      return { text: planText(script.dayCount, script.label), inputTokens: 500, outputTokens: 1_500 };
     },
   };
 }

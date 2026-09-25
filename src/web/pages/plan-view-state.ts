@@ -1,13 +1,12 @@
 import type { Currency } from '../../shared/currencies';
-import { PLAN_LIMIT_REACHED, type PlanActivity, type PlanDay, type PlanView } from '../../shared/plan-schemas';
+import {
+  PLAN_LIMIT_REACHED,
+  type PlanActivity,
+  type PlanDay,
+  type PlanVersionSummary,
+  type SavedPlan,
+} from '../../shared/plan-schemas';
 import type { ApiResult } from '../api-client';
-
-export type PlanState =
-  | { readonly kind: 'idle' }
-  | { readonly kind: 'generating' }
-  | { readonly kind: 'shown'; readonly plan: PlanView }
-  | { readonly kind: 'refused'; readonly message: string }
-  | { readonly kind: 'failed'; readonly message: string };
 
 export interface ActivityDetailRow {
   readonly label: string;
@@ -15,15 +14,6 @@ export interface ActivityDetailRow {
 }
 
 const PLAIN_FAILURE = 'The Plan could not be generated. Try again.';
-
-/** What the Trip page shows once a request for a Plan has answered. */
-export function planStateAfter(result: ApiResult<PlanView>): PlanState {
-  if (result.ok) return { kind: 'shown', plan: result.data };
-  if (result.error.code === PLAN_LIMIT_REACHED) {
-    return { kind: 'refused', message: result.error.message ?? PLAIN_FAILURE };
-  }
-  return { kind: 'failed', message: result.error.message ?? PLAIN_FAILURE };
-}
 
 export function durationLabel(minutes: number): string {
   const hours = Math.floor(minutes / 60);
@@ -51,3 +41,31 @@ export function activityDetailRows(activity: PlanActivity, currency: Currency): 
   ];
 }
 
+
+/** What the Trip's Plan section shows: the saved Plan, if there is one, and any message beside it. */
+export interface PlanPanel {
+  readonly plan: SavedPlan | null;
+  readonly notice: { readonly kind: 'refused' | 'failed'; readonly message: string } | null;
+  readonly isGenerating: boolean;
+}
+
+export const EMPTY_PLAN_PANEL: PlanPanel = { plan: null, notice: null, isGenerating: false };
+
+/** The panel once a request that saves a Plan (generating, restoring) has answered. A failure never hides the saved Plan. */
+export function panelAfterSave(previous: PlanPanel, result: ApiResult<SavedPlan>): PlanPanel {
+  if (result.ok) return { plan: result.data, notice: null, isGenerating: false };
+  const kind = result.error.code === PLAN_LIMIT_REACHED ? 'refused' : 'failed';
+  return { plan: previous.plan, notice: { kind, message: result.error.message ?? PLAIN_FAILURE }, isGenerating: false };
+}
+
+export function versionLabel(summary: PlanVersionSummary): string {
+  return `Version ${summary.version}`;
+}
+
+/** `2026-09-25T10:05:00.000Z` as `2026-09-25 10:05 UTC`, matching how the rest of the application states times. */
+const utcText = (iso: string): string => `${iso.slice(0, 10)} ${iso.slice(11, 16)} UTC`;
+
+export function versionDetail(summary: PlanVersionSummary, isCurrent: boolean): string {
+  const origin = summary.source === 'restore' ? 'restored from an earlier version' : 'generated';
+  return `saved ${utcText(summary.createdAt)}, ${origin}${isCurrent ? ' (current)' : ''}`;
+}

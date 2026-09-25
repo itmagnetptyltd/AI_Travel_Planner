@@ -29,6 +29,13 @@ export function TripPage() {
     };
   }, [path]);
 
+  /** A saved Plan makes the Trip Planned, so the page reads the Trip again rather than keep saying Draft. */
+  const reloadTrip = () => {
+    void api<TripView>('GET', path).then((result) => {
+      if (result.ok) setTrip({ state: 'loaded', trip: result.data });
+    });
+  };
+
   const deleteTrip = async () => {
     const result = await api('DELETE', path);
     if (result.ok) navigate('/trips');
@@ -54,7 +61,7 @@ export function TripPage() {
         <dd>{shown.status}</dd>
       </dl>
       <p>{`Travel style: ${shown.travelStyles.length === 0 ? 'Not set' : shown.travelStyles.join(', ')}`}</p>
-      <PlanGenerator tripId={shown.id} />
+      <PlanGenerator key={shown.id} tripId={shown.id} onPlanSaved={reloadTrip} />
       <Link to={`/trips/${encodeURIComponent(shown.id)}/edit`}>Edit</Link>
       {isConfirmingDelete ? (
         <div role="group" aria-label="Confirm delete">

@@ -9,8 +9,9 @@ import {
   type GenerateResult,
   type PlanGenerationSettings,
 } from '../../src/server/plans/plan-service';
+import { createPlanStore, type PlanStore } from '../../src/server/plans/plan-store';
 import { createTripService } from '../../src/server/trips/trip-service';
-import type { PlanView } from '../../src/shared/plan-schemas';
+import type { SavedPlan } from '../../src/shared/plan-schemas';
 import { aDestination } from '../support/a-destination';
 import { aPlanReplyText, anActivity } from '../support/a-plan-reply';
 import { aTripInput, anOwner, TODAY } from '../support/a-trip';
@@ -27,13 +28,18 @@ const SETTINGS: PlanGenerationSettings = {
   outputCostMicroUsdPerMTok: 15_000_000,
 };
 
-function aPlanService(settings: Partial<PlanGenerationSettings> = {}, ai: AiDouble = anAiDouble()) {
+function aPlanService(
+  settings: Partial<PlanGenerationSettings> = {},
+  ai: AiDouble = anAiDouble(),
+  wrapStore: (real: PlanStore) => PlanStore = (real) => real,
+) {
   const db = aTestDatabase();
   const clock = aFixedClock(TODAY);
   const trips = createTripService({ db, clock });
   const limits = createAiUsageLimitService({ db, clock });
   const destinations = createDestinationService({ db, clock });
-  const plans = createPlanService({ db, clock, ai, trips, limits, settings: { ...SETTINGS, ...settings } });
+  const store = wrapStore(createPlanStore({ db, clock }));
+  const plans = createPlanService({ db, clock, ai, trips, limits, store, settings: { ...SETTINGS, ...settings } });
   const ownerId = anOwner(db);
   const kyotoId = destinations.add(aDestination()).id;
 
@@ -42,10 +48,10 @@ function aPlanService(settings: Partial<PlanGenerationSettings> = {}, ai: AiDoub
     if (!created.ok) throw new Error(`Creating the Trip failed: ${created.error}`);
     return created.trip;
   };
-  return { db, clock, ai, trips, limits, plans, ownerId, aTrip };
+  return { db, clock, ai, trips, limits, plans, store, ownerId, aTrip };
 }
 
-function planOf(result: GenerateResult): PlanView {
+function planOf(result: GenerateResult): SavedPlan {
   if (!result.ok) throw new Error(`Expected a Plan, got ${result.error}`);
   return result.plan;
 }
@@ -133,6 +139,120 @@ describe('generating a Plan', () => {
 
     expect(result).toEqual({ ok: false, error: 'not-found' });
     expect(ai.requests).toHaveLength(0);
+  });
+});
+
+describe('saving what is generated', () => {
+  // @covers REQ-TRV-017@v1
+  test('saves a successful generation as version 1 and makes the Draft Trip Planned', async () => {
+    const { plans, store, trips, ownerId, aTrip } = aPlanService();
+    const trip = aTrip();
+    expect(trip.status).toBe('Draft');
+
+    const plan = planOf(await plans.generate(ownerId, trip.id));
+
+    expect(plan.version).toBe(1);
+    expect(store.current(trip.id)).toEqual(plan);
+    expect(trips.getForOwner(ownerId, trip.id)?.status).toBe('Planned');
+    expect(store.listVersions(trip.id)).toHaveLength(1);
+  });
+
+  // @covers REQ-TRV-017@v1
+  test('saves nothing, and leaves the Trip Draft, when the AI fails', async () => {
+    const { db, plans, ai, store, trips, ownerId, aTrip } = aPlanService();
+    ai.failWith();
+    const trip = aTrip();
+
+    const result = await plans.generate(ownerId, trip.id);
+
+    expect(result).toMatchObject({ ok: false, error: 'ai-unavailable' });
+    expect(db.select().from(aiRequests).all().map((row) => row.status)).toEqual(['failed']);
+    expect(store.current(trip.id)).toBeNull();
+    expect(trips.getForOwner(ownerId, trip.id)?.status).toBe('Draft');
+  });
+
+  // @covers REQ-TRV-017@v1
+  test('saves nothing when the reply is not a usable Plan', async () => {
+    const { db, plans, ai, store, ownerId, aTrip } = aPlanService();
+    ai.replyWith(aPlanReplyText({ dayCount: 3 }));
+    const trip = aTrip();
+
+    const result = await plans.generate(ownerId, trip.id);
+
+    expect(result).toMatchObject({ ok: false, error: 'ai-unavailable' });
+    expect(store.listVersions(trip.id)).toEqual([]);
+    expect(db.select().from(aiRequests).all().map((row) => row.status)).toEqual(['failed']);
+  });
+
+  // @covers REQ-TRV-018@v1
+  test('adds version 2, and keeps version 1, when a Trip that has a Plan is generated again', async () => {
+    const { plans, ai, store, ownerId, aTrip } = aPlanService();
+    const trip = aTrip();
+    ai.replyWith(aPlanReplyText({ days: Array.from({ length: 8 }, (_, i) => ({ dayNumber: i + 1, activities: [anActivity({ title: 'First idea' })] })) }));
+    await plans.generate(ownerId, trip.id);
+    ai.replyWith(aPlanReplyText({ days: Array.from({ length: 8 }, (_, i) => ({ dayNumber: i + 1, activities: [anActivity({ title: 'Second idea' })] })) }));
+
+    const second = planOf(await plans.generate(ownerId, trip.id));
+
+    expect(second.version).toBe(2);
+    expect(store.current(trip.id)?.days[0]?.activities[0]?.title).toBe('Second idea');
+    expect(store.listVersions(trip.id).map((v) => v.version)).toEqual([2, 1]);
+  });
+});
+
+describe('when saving fails, or the Trip changes while the AI is answering', () => {
+  // @covers REQ-TRV-017@v1
+  test('rolls the save back, settles the record as failed rather than pending, and lets the error through', async () => {
+    const throwsAfterSaving = (real: PlanStore): PlanStore => ({
+      ...real,
+      save: (tripId, plan, source, within) => {
+        real.save(tripId, plan, source, within);
+        throw new Error('disk full');
+      },
+    });
+    const { db, plans, store, trips, ownerId, aTrip } = aPlanService({}, anAiDouble(), throwsAfterSaving);
+    const trip = aTrip();
+
+    await expect(plans.generate(ownerId, trip.id)).rejects.toThrow('disk full');
+
+    expect(db.select().from(aiRequests).all().map((row) => row.status)).toEqual(['failed']);
+    expect(store.listVersions(trip.id)).toEqual([]);
+    expect(trips.getForOwner(ownerId, trip.id)?.status).toBe('Draft');
+  });
+
+  // @covers REQ-TRV-017@v1
+  test('saves no Plan, and does not mark the Trip Planned, when the Trip is deleted while the AI is answering', async () => {
+    const { db, plans, ai, store, trips, ownerId, aTrip } = aPlanService();
+    const trip = aTrip();
+    ai.replyWith(() => {
+      trips.softDelete(ownerId, trip.id);
+      return aPlanReplyText({ dayCount: 8 });
+    });
+
+    const result = await plans.generate(ownerId, trip.id);
+
+    expect(result).toEqual({ ok: false, error: 'not-found' });
+    expect(store.listVersions(trip.id)).toEqual([]);
+    expect(db.select().from(aiRequests).all().map((row) => row.status)).toEqual(['succeeded']);
+  });
+
+  // @covers REQ-TRV-017@v1
+  test.each([
+    ['end date', { endDate: '2026-10-16' }],
+    ['currency', { currency: 'EUR' as const }],
+  ])('saves no Plan, and says the Trip changed, when its %s is edited while the AI is answering', async (_field, change) => {
+    const { plans, ai, store, trips, ownerId, aTrip } = aPlanService();
+    const trip = aTrip();
+    ai.replyWith(() => {
+      trips.update(ownerId, trip.id, change);
+      return aPlanReplyText({ dayCount: 8 });
+    });
+
+    const result = await plans.generate(ownerId, trip.id);
+
+    expect(result).toEqual({ ok: false, error: 'trip-changed' });
+    expect(store.listVersions(trip.id)).toEqual([]);
+    expect(trips.getForOwner(ownerId, trip.id)?.status).toBe('Draft');
   });
 });
 

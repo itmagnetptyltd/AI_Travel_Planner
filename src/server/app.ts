@@ -23,6 +23,7 @@ import { createTripService } from './trips/trip-service';
 import { createAiRecordService, scheduleTextPurge } from './plans/ai-record-service';
 import { createAiUsageLimitService } from './plans/ai-usage-limit-service';
 import { createPlanService, type PlanGenerationSettings } from './plans/plan-service';
+import { createPlanStore } from './plans/plan-store';
 
 const AI_TEXT_PURGE_INTERVAL_MS = 60 * 60 * 1000;
 
@@ -66,12 +67,14 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   const trips = createTripService({ db: deps.db, clock: deps.clock });
   const aiLimits = createAiUsageLimitService({ db: deps.db, clock: deps.clock });
   const aiRecords = createAiRecordService({ db: deps.db, clock: deps.clock });
+  const planStore = createPlanStore({ db: deps.db, clock: deps.clock });
   const plans = createPlanService({
     db: deps.db,
     clock: deps.clock,
     ai: deps.ai,
     trips,
     limits: aiLimits,
+    store: planStore,
     settings: deps.planSettings,
   });
   const adminAccounts = createAdminAccountService({ db: deps.db, clock: deps.clock, sessions });
@@ -91,7 +94,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   });
   await profileRoutes(app, { accounts, sessions });
   await tripRoutes(app, { accounts, sessions, trips });
-  await planRoutes(app, { sessions, plans });
+  await planRoutes(app, { sessions, plans, trips, store: planStore });
   await destinationRoutes(app, { sessions, destinations });
   await adminRoutes(app, { accounts, sessions, adminAccounts, destinations, aiLimits, aiRecords, registeredRoutes: registeredAdminRoutes });
 
