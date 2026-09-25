@@ -56,25 +56,25 @@
   name: Save and reopen
   branch: feat/trv-save-reopen
   why: "A generated Plan is saved as a version, reopens exactly as saved and survives a restart"
-  covers: [REQ-TRV-017, REQ-TRV-018, REQ-TRV-019]
+  covers: [REQ-TRV-017, REQ-TRV-018, REQ-TRV-019, REQ-TRV-097]
 
 - id: 6
   name: Preferences and personalization
   branch: feat/trv-preferences
   why: "Travel style, interests, food, transportation and accommodation preferences are recorded and shape the generated Plan"
-  covers: [REQ-TRV-020, REQ-TRV-021, REQ-TRV-022, REQ-TRV-023, REQ-TRV-024, REQ-TRV-025, REQ-TRV-028]
+  covers: [REQ-TRV-020, REQ-TRV-021, REQ-TRV-022, REQ-TRV-023, REQ-TRV-024, REQ-TRV-025, REQ-TRV-028, REQ-TRV-096]
 
 - id: 7
   name: Edit and regenerate
   branch: feat/trv-edit-regenerate
   why: "A Traveler edits, removes, replaces and moves Activities, and regenerates the whole Plan or one Day"
-  covers: [REQ-TRV-041, REQ-TRV-042, REQ-TRV-043, REQ-TRV-045, REQ-TRV-046, REQ-TRV-047, REQ-TRV-048, REQ-TRV-094]
+  covers: [REQ-TRV-041, REQ-TRV-042, REQ-TRV-043, REQ-TRV-045, REQ-TRV-046, REQ-TRV-047, REQ-TRV-048, REQ-TRV-094, REQ-TRV-098]
 
 - id: 8
   name: AI chat
   branch: feat/trv-chat
   why: "A chat box on the Trip answers questions and proposes Plan changes the Traveler previews and accepts"
-  covers: [REQ-TRV-035, REQ-TRV-036, REQ-TRV-037, REQ-TRV-038, REQ-TRV-039, REQ-TRV-040]
+  covers: [REQ-TRV-035, REQ-TRV-036, REQ-TRV-037, REQ-TRV-038, REQ-TRV-039, REQ-TRV-040, REQ-TRV-099]
 
 - id: 9
   name: Search and filter Trips
@@ -98,7 +98,7 @@
   name: Feedback and admin dashboard
   branch: feat/trv-feedback-dashboard
   why: "Travelers rate Plans; Administrators review feedback, see Trips and metrics; only two roles exist"
-  covers: [REQ-TRV-062, REQ-TRV-063, REQ-TRV-064, REQ-TRV-065, REQ-TRV-069, REQ-TRV-070, REQ-TRV-079]
+  covers: [REQ-TRV-062, REQ-TRV-063, REQ-TRV-064, REQ-TRV-065, REQ-TRV-069, REQ-TRV-070, REQ-TRV-079, REQ-TRV-100, REQ-TRV-101]
 
 - id: 13
   name: AI feedback analysis
