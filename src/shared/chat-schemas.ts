@@ -40,12 +40,20 @@ export interface ProposedDay {
 export const PROPOSAL_STATUSES = ['pending', 'accepted', 'rejected'] as const;
 export type ProposalStatus = (typeof PROPOSAL_STATUSES)[number];
 
+/** What the Plan is estimated to cost as it stands and as it would be if the change were accepted (REQ-TRV-053). */
+export interface EstimatedTotals {
+  readonly before: number;
+  readonly after: number;
+}
+
 /** A change to the Plan proposed in the chat, shown as a preview until the Traveler accepts or rejects it. */
 export interface ChatProposal {
   /** The Plan version the change was made for; it can be accepted only while that is still the current one. */
   readonly basePlanVersion: number;
   readonly status: ProposalStatus;
   readonly days: readonly ProposedDay[];
+  /** Absent on a proposal made before the totals were kept. */
+  readonly estimatedTotal?: EstimatedTotals | undefined;
 }
 
 export interface ChatMessage {

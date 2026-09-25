@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { TripView } from '../../shared/trip-schemas';
 import { planBanner, planButtonLabel } from '../pages/plan-view-state';
+import { BudgetPanel } from './BudgetPanel';
 import { ChatBox } from './ChatBox';
 import { ConfirmRegeneration } from './ConfirmRegeneration';
 import { PlanDisplay } from './PlanDisplay';
@@ -38,10 +39,11 @@ export function PlanGenerator({ trip, onPlanSaved }: { readonly trip: TripView; 
         </p>
       ) : null}
       {panel.plan ? <PlanDisplay plan={panel.plan} actions={planActions} /> : null}
+      {panel.plan ? <BudgetPanel tripId={trip.id} planVersion={panel.plan.version} /> : null}
       {panel.plan && versions.length > 0 ? (
         <PlanVersions versions={versions} currentVersion={panel.plan.version} isBusy={planActions.isBusy} onRestore={restore} />
       ) : null}
-      {panel.plan ? <ChatBox tripId={trip.id} planVersion={panel.plan.version} isBusy={actions.isBusy} onBusyChange={setIsChatBusy} onPlanChanged={showPlan} /> : null}
+      {panel.plan ? <ChatBox tripId={trip.id} planVersion={panel.plan.version} currency={panel.plan.currency} isBusy={actions.isBusy} onBusyChange={setIsChatBusy} onPlanChanged={showPlan} /> : null}
     </>
   );
 }

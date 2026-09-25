@@ -1,8 +1,10 @@
 import { describe, expect, test } from 'vitest';
-import { applyProposal, buildProposal } from '../../src/server/chat/chat-proposal';
+import { applyProposal, buildProposal, estimatedTotalsOf } from '../../src/server/chat/chat-proposal';
 import type { PlanView } from '../../src/shared/plan-schemas';
 import { activityIn, allActivities, aPlanView, withActivityChanged } from '../support/a-plan';
 import { aPlanWithShopping, asChange } from '../support/a-chat-plan';
+import { estimatesOf } from '../../src/shared/trip-budget';
+import { aPlanCosting, COSTS_TOTALLING_5600 } from '../support/a-budget';
 
 const NEW_ACTIVITY = {
   title: 'Sushi class',
@@ -168,5 +170,32 @@ describe('applying a chat change to the Plan', () => {
     applyProposal(plan, proposedFor(plan, 3, [asChange(activityIn(plan, 3, 0))]));
 
     expect(plan).toEqual(before);
+  });
+});
+
+describe('the estimated total a chat change carries', () => {
+  const costed = aPlanCosting({ costs: COSTS_TOTALLING_5600 });
+  const dayOne = costed.days[0]?.activities ?? [];
+  const cheaper = dayOne.map((a) => asChange(a.category === 'Food' ? { ...a, estimatedCost: 1000 } : a.category === 'Shopping' ? { ...a, estimatedCost: 200 } : a));
+
+  // @covers REQ-TRV-053@v1
+  test('is 5600 before and 4800 after a change that lowers the food and shopping costs', () => {
+    const days = proposedFor(costed, 1, cheaper);
+
+    expect(estimatedTotalsOf(costed, days)).toEqual({ before: 5600, after: 4800 });
+  });
+
+  // @covers REQ-TRV-053@v1
+  test('is the same figure twice when the change moves no cost', () => {
+    const days = proposedFor(costed, 1, dayOne.map((a) => ({ ...asChange(a), startTime: a.startTime === '20:00' ? '21:00' : a.startTime })));
+
+    expect(estimatedTotalsOf(costed, days)).toEqual({ before: 5600, after: 5600 });
+  });
+
+  // @covers REQ-TRV-053@v1
+  test('does not change the Plan it works from, so the saved total is still 5600', () => {
+    estimatedTotalsOf(costed, proposedFor(costed, 1, cheaper));
+
+    expect(estimatesOf(costed).total).toBe(5600);
   });
 });

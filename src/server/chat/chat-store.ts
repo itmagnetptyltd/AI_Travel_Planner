@@ -4,7 +4,7 @@ import { z } from 'zod';
 import type { Clock } from '../clock';
 import type { TrvDatabase } from '../db/client';
 import { chatMessages } from '../db/schema';
-import type { ChatMessage, ChatRole, ProposalStatus, ProposedDay } from '../../shared/chat-schemas';
+import type { ChatMessage, ChatRole, EstimatedTotals, ProposalStatus, ProposedDay } from '../../shared/chat-schemas';
 import { ACTIVITY_CATEGORIES } from '../../shared/plan-schemas';
 import type { Executor } from '../plans/plan-store';
 
@@ -12,7 +12,7 @@ import type { Executor } from '../plans/plan-store';
 export interface NewChatEntry {
   readonly role: ChatRole;
   readonly text: string;
-  readonly proposal?: { readonly basePlanVersion: number; readonly days: readonly ProposedDay[] };
+  readonly proposal?: { readonly basePlanVersion: number; readonly days: readonly ProposedDay[]; readonly estimatedTotal: EstimatedTotals };
 }
 
 export interface ChatStore {
@@ -45,6 +45,7 @@ const storedActivity = z.object({
 
 const storedProposal = z.object({
   basePlanVersion: z.number(),
+  estimatedTotal: z.object({ before: z.number(), after: z.number() }).optional(),
   days: z.array(
     z.object({
       dayNumber: z.number(),
@@ -76,7 +77,7 @@ function messageOf(row: Row): ChatMessage {
     role: row.role,
     text: row.text,
     createdAt: row.createdAt.toISOString(),
-    proposal: { basePlanVersion: parsed.data.basePlanVersion, status: row.proposalStatus, days: parsed.data.days },
+    proposal: { basePlanVersion: parsed.data.basePlanVersion, status: row.proposalStatus, days: parsed.data.days, estimatedTotal: parsed.data.estimatedTotal },
   };
 }
 
@@ -94,7 +95,9 @@ export function createChatStore(deps: { readonly db: TrvDatabase; readonly clock
         seq,
         role: entry.role,
         text: entry.text,
-        proposalJson: entry.proposal ? JSON.stringify({ basePlanVersion: entry.proposal.basePlanVersion, days: entry.proposal.days }) : null,
+        proposalJson: entry.proposal
+          ? JSON.stringify({ basePlanVersion: entry.proposal.basePlanVersion, days: entry.proposal.days, estimatedTotal: entry.proposal.estimatedTotal })
+          : null,
         proposalStatus: entry.proposal ? 'pending' : null,
         createdAt: now,
       };

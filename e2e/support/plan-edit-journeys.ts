@@ -28,8 +28,13 @@ export async function openActivity(page: Page, dayNumber: number, title: string)
 }
 
 /** A confirmed Traveler with a Trip of `dayCount` Days that already has a generated Plan on show. */
-export async function aTripWithAPlan(browser: Browser, label: string, dayCount = 4): Promise<TripReadyToPlan> {
-  const ready = await aTripReadyToPlan(browser, label, dayCount);
+export async function aTripWithAPlan(
+  browser: Browser,
+  label: string,
+  dayCount = 4,
+  details: Parameters<typeof aTripReadyToPlan>[3] = {},
+): Promise<TripReadyToPlan> {
+  const ready = await aTripReadyToPlan(browser, label, dayCount, details);
   await generatePlan(ready.page);
   await expectDaysShown(ready.page, dayCount);
   return ready;

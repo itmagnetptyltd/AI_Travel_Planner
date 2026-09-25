@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { PlanActivity, PlanDay, PlanView } from '../../shared/plan-schemas';
-import type { ProposedActivity, ProposedDay } from '../../shared/chat-schemas';
+import type { EstimatedTotals, ProposedActivity, ProposedDay } from '../../shared/chat-schemas';
+import { estimatesOf } from '../../shared/trip-budget';
 import { inTimeOrder, type NewActivity } from '../plans/plan-edit';
 
 /** What the AI says a Day should hold after a change: the whole list, not only what differs. */
@@ -88,6 +89,11 @@ const withoutMark = (activity: ProposedActivity): PlanActivity => ({
   category: activity.category,
   changedByHand: activity.changedByHand,
 });
+
+/** The estimated total of the Plan as it is and as it would be with the proposed Days in place (REQ-TRV-053). */
+export function estimatedTotalsOf(plan: PlanView, days: readonly ProposedDay[]): EstimatedTotals {
+  return { before: estimatesOf(plan).total, after: estimatesOf(applyProposal(plan, days)).total };
+}
 
 /** The Plan with the proposed Days in place, and every other Day exactly as it was (REQ-TRV-039). */
 export function applyProposal(plan: PlanView, days: readonly ProposedDay[]): PlanView {

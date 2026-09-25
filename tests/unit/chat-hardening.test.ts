@@ -141,7 +141,7 @@ describe('a stored proposal that cannot be read back', () => {
     const tripId = created.trip.id;
     chat.append(tripId, [{ role: 'traveler', text: 'Remove shopping' }]);
     const [, broken] = chat.append(tripId, [
-      { role: 'assistant', text: 'Done.', proposal: { basePlanVersion: 1, days: [] } },
+      { role: 'assistant', text: 'Done.', proposal: { basePlanVersion: 1, days: [], estimatedTotal: { before: 0, after: 0 } } },
       { role: 'traveler', text: 'Thanks' },
     ]);
     db.update(chatMessages).set({ proposalJson: '{"nonsense":true}' }).run();
