@@ -9,6 +9,7 @@ const SUBJECT_TYPE_OF_ACTION = {
   'account.disabled': 'account',
   'account.enabled': 'account',
   'ai-request.viewed': 'ai-request',
+  'trip-plan.viewed': 'trip',
 } as const;
 
 export type AuditAction = keyof typeof SUBJECT_TYPE_OF_ACTION;

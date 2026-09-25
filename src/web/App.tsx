@@ -5,7 +5,10 @@ import { AdminAiRequestsPage } from './pages/admin/AdminAiRequestsPage';
 import { AdminAiUsageLimitsPage } from './pages/admin/AdminAiUsageLimitsPage';
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 import { AdminDestinationsPage } from './pages/admin/AdminDestinationsPage';
+import { AdminFeedbackPage } from './pages/admin/AdminFeedbackPage';
 import { AdminNotificationsPage } from './pages/admin/AdminNotificationsPage';
+import { AdminTripPage, AdminTripPlanPage } from './pages/admin/AdminTripPage';
+import { AdminTripsPage } from './pages/admin/AdminTripsPage';
 import { AdminUserPage } from './pages/admin/AdminUserPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 import { DestinationDetailPage } from './pages/DestinationDetailPage';
@@ -45,6 +48,10 @@ export function App() {
         <Route path="/admin/destinations" element={<RequireAdministrator><AdminDestinationsPage /></RequireAdministrator>} />
         <Route path="/admin/ai-usage-limits" element={<RequireAdministrator><AdminAiUsageLimitsPage /></RequireAdministrator>} />
         <Route path="/admin/notification-settings" element={<RequireAdministrator><AdminNotificationsPage /></RequireAdministrator>} />
+        <Route path="/admin/feedback" element={<RequireAdministrator><AdminFeedbackPage /></RequireAdministrator>} />
+        <Route path="/admin/trips" element={<RequireAdministrator><AdminTripsPage /></RequireAdministrator>} />
+        <Route path="/admin/trips/:id" element={<RequireAdministrator><AdminTripPage /></RequireAdministrator>} />
+        <Route path="/admin/trips/:id/plan" element={<RequireAdministrator><AdminTripPlanPage /></RequireAdministrator>} />
         <Route path="/admin/ai-requests" element={<RequireAdministrator><AdminAiRequestsPage /></RequireAdministrator>} />
         <Route path="/admin/ai-requests/:id" element={<RequireAdministrator><AdminAiRequestPage /></RequireAdministrator>} />
         <Route path="*" element={<Navigate to="/trips" replace />} />

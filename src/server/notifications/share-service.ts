@@ -2,10 +2,10 @@ import type { Clock } from '../clock';
 import type { TrvDatabase } from '../db/client';
 import type { EmailService } from '../email/email-service';
 import { emailTripOf, planEmail, sharedEmail } from '../email/plan-email-templates';
+import { publicPlan } from '../plans/public-plan';
 import type { PlanStore } from '../plans/plan-store';
 import type { TripService } from '../trips/trip-service';
 import { PLAN_RECOMMENDATION_NOTICE } from '../../shared/plan-notice';
-import type { PlanView } from '../../shared/plan-schemas';
 import { recipientSchema, SHARE_DAILY_LIMIT, type ShareSummary, type SharedPlanView } from '../../shared/share-schemas';
 import { estimatesOf } from '../../shared/trip-budget';
 import { createShareStore, type ShareRow, type ShareStore } from './share-store';
@@ -56,27 +56,6 @@ const summaryOf = (row: ShareRow): ShareSummary => ({
   expiresAt: row.expiresAt.toISOString(),
   isRevoked: row.revokedAt !== null,
 });
-
-/** The Plan as a public link shows it: no ids and no marks of who edited what. */
-function publicPlan(plan: PlanView): SharedPlanView['plan'] {
-  return {
-    currency: plan.currency,
-    stay: plan.stay,
-    days: plan.days.map((day) => ({
-      dayNumber: day.dayNumber,
-      date: day.date,
-      activities: day.activities.map((activity) => ({
-        startTime: activity.startTime,
-        title: activity.title,
-        durationMinutes: activity.durationMinutes,
-        estimatedCost: activity.estimatedCost,
-        location: activity.location,
-        reason: activity.reason,
-        category: activity.category,
-      })),
-    })),
-  };
-}
 
 export function createShareService(deps: {
   readonly db: TrvDatabase;

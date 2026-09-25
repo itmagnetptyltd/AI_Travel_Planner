@@ -50,6 +50,7 @@ const app = await buildApp({
   appBaseUrl: config.APP_BASE_URL,
   timezone: config.APP_TIMEZONE,
   reminderCheckEveryMs: config.REMINDER_CHECK_INTERVAL_MS,
+  tripPurgeEveryMs: config.TRIP_PURGE_INTERVAL_MS,
   cookieSecure: config.COOKIE_SECURE,
   authRateLimitPerMinute: config.AUTH_RATE_LIMIT_PER_MINUTE,
   webRoot: resolve('dist/web'),

@@ -1,3 +1,4 @@
+import { parseCommentLine } from '../feedback/feedback-analysis-prompt';
 import { readFileSync } from 'node:fs';
 import { z } from 'zod';
 import { AiUnavailableError, type AiReply, type AiService } from './ai-service';
@@ -15,6 +16,13 @@ const scriptSchema = z.object({
   /** What a chat message gets back. `echoInstructions` answers with the instructions the AI was sent, as a misbehaving AI might. */
   chat: z
     .object({ reply: z.string().max(2000), changes: z.array(z.unknown()).nullish(), echoInstructions: z.boolean().optional() })
+    .optional(),
+  /** What an Administrator's request to analyse feedback gets back: a summary, and themes named for the entries whose comment holds a word. */
+  feedback: z
+    .object({
+      summary: z.string().max(2000).optional(),
+      themes: z.array(z.object({ name: z.string().max(120), matching: z.string().max(60) })).max(20).optional(),
+    })
     .optional(),
 });
 
@@ -80,10 +88,23 @@ function chatText(system: string, script: Script): string {
   return JSON.stringify({ reply: chat.echoInstructions ? system.slice(0, 1900) : chat.reply, changes: chat.changes ?? null });
 }
 
-/** Which request this is, told by how it begins: a chat message, one Day, one replacement Activity, or a whole Plan. */
+const DEFAULT_FEEDBACK_SUMMARY = 'Travelers gave a mix of praise and complaints.';
+
+function themesText(user: string, script: Script): string {
+  const listed = user.split('\n').flatMap((line) => parseCommentLine(line) ?? []);
+  const themes = (script.feedback?.themes ?? []).map((theme) => ({
+    name: theme.name,
+    entries: listed.filter(({ comment }) => comment.toLowerCase().includes(theme.matching.toLowerCase())).map(({ number }) => number),
+  }));
+  return JSON.stringify({ themes });
+}
+
+/** Which request this is, told by how it begins: a chat message, feedback to analyse, one Day, one replacement Activity, or a whole Plan. */
 function replyTextFor(request: { readonly system: string; readonly user: string }, script: Script): string {
   const { user } = request;
   if (user.startsWith('Chat about this trip.')) return chatText(request.system, script);
+  if (user.startsWith('Summarise this feedback.')) return script.feedback?.summary ?? DEFAULT_FEEDBACK_SUMMARY;
+  if (user.startsWith('Find the recurring themes in this feedback.')) return themesText(user, script);
   const day = /^Rewrite Day (\d+) of this trip/.exec(user);
   if (day?.[1]) return dayText(Number(day[1]), script.label);
   if (user.startsWith('Suggest one activity to replace')) return suggestionText(script.label);

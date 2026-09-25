@@ -4,6 +4,7 @@ import { planBanner, planButtonLabel } from '../pages/plan-view-state';
 import { BudgetPanel } from './BudgetPanel';
 import { ChatBox } from './ChatBox';
 import { ConfirmRegeneration } from './ConfirmRegeneration';
+import { FeedbackPanel } from './FeedbackPanel';
 import { PlanDisplay } from './PlanDisplay';
 import { PlanVersions } from './PlanVersions';
 import { SharePanel } from './SharePanel';
@@ -42,6 +43,7 @@ export function PlanGenerator({ trip, onPlanSaved }: { readonly trip: TripView; 
       {panel.plan ? <PlanDisplay plan={panel.plan} actions={planActions} /> : null}
       {panel.plan ? <BudgetPanel tripId={trip.id} planVersion={panel.plan.version} /> : null}
       {panel.plan ? <SharePanel tripId={trip.id} isBusy={planActions.isBusy} /> : null}
+      {panel.plan ? <FeedbackPanel key={trip.id} tripId={trip.id} /> : null}
       {panel.plan && versions.length > 0 ? (
         <PlanVersions versions={versions} currentVersion={panel.plan.version} isBusy={planActions.isBusy} onRestore={restore} />
       ) : null}

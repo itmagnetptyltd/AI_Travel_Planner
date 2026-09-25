@@ -14,8 +14,14 @@ export const PLAN_LIMIT_KINDS = ['plan-generation', 'day-regeneration', 'activit
 export const CHAT_LIMIT_KINDS = ['chat'] as const;
 export const DEFAULT_DAILY_CHAT_LIMIT = 100;
 
-export const AI_REQUEST_KINDS = [...PLAN_LIMIT_KINDS, ...CHAT_LIMIT_KINDS] as const;
+/** An Administrator's requests to analyse feedback. Made by no Traveler and against no Trip, so no per-Traveler limit applies to them. */
+export const ANALYSIS_KINDS = ['feedback-summary', 'feedback-themes'] as const;
+
+export const AI_REQUEST_KINDS = [...PLAN_LIMIT_KINDS, ...CHAT_LIMIT_KINDS, ...ANALYSIS_KINDS] as const;
 export type AiRequestKind = (typeof AI_REQUEST_KINDS)[number];
+/** The requests a Traveler's daily limit is counted over. */
+export type LimitedAiRequestKind = (typeof PLAN_LIMIT_KINDS | typeof CHAT_LIMIT_KINDS)[number];
+export type AnalysisKind = (typeof ANALYSIS_KINDS)[number];
 
 /** What an Administrator sends to change the limits (REQ-TRV-091). The chat limit has a setting but no admin screen yet. */
 export const aiUsageLimitsSchema = z

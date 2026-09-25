@@ -31,6 +31,12 @@ import { createChatStore } from './chat/chat-store';
 import { createChatService } from './chat/chat-service';
 import { chatRoutes } from './chat/chat-routes';
 import { createAiUsageLimitService } from './plans/ai-usage-limit-service';
+import { createAdminTripService } from './admin/admin-trip-service';
+import { createMetricsService } from './admin/metrics-service';
+import { createAdminFeedbackService } from './feedback/admin-feedback-service';
+import { createFeedbackAnalysisService } from './feedback/feedback-analysis-service';
+import { createFeedbackService } from './feedback/feedback-service';
+import { feedbackRoutes } from './feedback/feedback-routes';
 import { createNotificationServices } from './notifications/notification-services';
 import { scheduleReminderChecks } from './notifications/reminder-service';
 import { shareRoutes } from './notifications/share-routes';
@@ -38,7 +44,7 @@ import { createPlanService, type PlanGenerationSettings } from './plans/plan-ser
 import { createPlanStore } from './plans/plan-store';
 
 const AI_TEXT_PURGE_INTERVAL_MS = 60 * 60 * 1000;
-const TRIP_PURGE_INTERVAL_MS = 60 * 60 * 1000;
+const DEFAULT_TRIP_PURGE_INTERVAL_MS = 60 * 60 * 1000;
 /** How long to wait for the mail service before giving up on one email. */
 const DEFAULT_EMAIL_TIMEOUT_MS = 15_000;
 
@@ -64,6 +70,8 @@ export interface AppDeps {
   /** Where log lines go instead of the process's output. Given only by tests. */
   readonly logStream?: { write(line: string): void };
   readonly emailTimeoutMs?: number;
+  /** How often Trips deleted 30 days ago are removed for good. */
+  readonly tripPurgeEveryMs?: number;
 }
 
 const statusCodeOf = (error: unknown): unknown =>
@@ -126,11 +134,12 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     store: planStore,
     onError: (error, what) => app.log.error({ err: loggableFailure(error) }, what),
   });
+  const feedback = createFeedbackService({ db: deps.db, clock: deps.clock, trips, store: planStore });
   const adminAccounts = createAdminAccountService({ db: deps.db, clock: deps.clock, sessions });
   const stopPurging = scheduleTextPurge(aiRecords, AI_TEXT_PURGE_INTERVAL_MS, (error) =>
     app.log.error({ err: error }, 'Clearing expired AI text failed'),
   );
-  const stopPurgingTrips = schedulePurge(() => trips.purgeExpired(), TRIP_PURGE_INTERVAL_MS, (error) =>
+  const stopPurgingTrips = schedulePurge(() => trips.purgeExpired(), deps.tripPurgeEveryMs ?? DEFAULT_TRIP_PURGE_INTERVAL_MS, (error) =>
     app.log.error({ err: error }, 'Removing expired deleted Trips failed'),
   );
   const reminderSchedule = scheduleReminderChecks(() => reminders.runCheck(), deps.reminderCheckEveryMs, (error) =>
@@ -156,9 +165,24 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await planRoutes(app, { sessions, plans, regeneration: planRegeneration, trips, store: planStore, notifications });
   await planEditRoutes(app, { sessions, editor: planEditor });
   await chatRoutes(app, { sessions, chat });
+  await feedbackRoutes(app, { sessions, feedback });
   await shareRoutes(app, { accounts, sessions, shares, rateLimitPerMinute: deps.authRateLimitPerMinute });
   await destinationRoutes(app, { sessions, destinations });
-  await adminRoutes(app, { accounts, sessions, adminAccounts, destinations, aiLimits, aiRecords, notificationSettings, registeredRoutes: registeredAdminRoutes });
+  const adminFeedback = createAdminFeedbackService({ db: deps.db });
+  await adminRoutes(app, {
+    accounts,
+    sessions,
+    adminAccounts,
+    destinations,
+    aiLimits,
+    aiRecords,
+    notificationSettings,
+    adminFeedback,
+    feedbackAnalysis: createFeedbackAnalysisService({ ...aiDeps, feedback: adminFeedback }),
+    adminTrips: createAdminTripService({ db: deps.db, clock: deps.clock, store: planStore }),
+    metrics: createMetricsService({ db: deps.db }),
+    registeredRoutes: registeredAdminRoutes,
+  });
 
   if (deps.webRoot && existsSync(deps.webRoot)) {
     await serveWebApp(app, deps.webRoot);

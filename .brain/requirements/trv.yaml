@@ -1917,7 +1917,14 @@
   title: A Traveler can rate a Trip's Plan and add a comment
   module: TRV
   priority: should
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/feedback.spec.ts
+    - tests/api/admin-feedback.http.spec.ts
+    - tests/api/feedback.http.spec.ts
+    - tests/unit/feedback-schemas.test.ts
+    - tests/unit/feedback-service.test.ts
+    - tests/unit/feedback-view-state.test.ts
   version: 1
   source: BRD v1.0 §15 ("Users should be able to rate the generated itinerary and provide comments"); §30 FR-10; §27 ("The user can submit feedback"); clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -1955,7 +1962,12 @@
   title: Each piece of feedback is stored against the Trip it was given on
   module: TRV
   priority: should
-  status: agreed
+  status: verified
+  verified_by:
+    - tests/api/admin-feedback.http.spec.ts
+    - tests/api/feedback.http.spec.ts
+    - tests/unit/feedback-service.test.ts
+    - tests/unit/permanent-delete-feedback.test.ts
   version: 1
   source: BRD v1.0 §15 ("Feedback should be stored against the relevant trip/itinerary"); §30 FR-10; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -1980,7 +1992,11 @@
   title: An Administrator can review all submitted feedback
   module: TRV
   priority: should
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/admin-feedback.spec.ts
+    - tests/api/admin-feedback.http.spec.ts
+    - tests/unit/feedback-admin.test.ts
   version: 1
   source: BRD v1.0 §15 ("Administrators should be able to review feedback"); §18; §27; §30 FR-10, FR-11; §25 Release 6
   acceptance:
@@ -1994,7 +2010,13 @@
   title: An Administrator can identify recurring requirements across feedback
   module: TRV
   priority: should
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/admin-feedback.spec.ts
+    - tests/api/admin-feedback.http.spec.ts
+    - tests/unit/admin-view-state.test.ts
+    - tests/unit/feedback-admin.test.ts
+    - tests/unit/feedback-csv.test.ts
   version: 1
   source: BRD v1.0 §15 ("identify recurring requirements"); §30 FR-10; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -2030,7 +2052,14 @@
   title: The AI can summarise submitted feedback for Administrators
   module: TRV
   priority: could
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/feedback-analysis.spec.ts
+    - tests/api/feedback-analysis.http.spec.ts
+    - tests/unit/feedback-analysis-prompt.test.ts
+    - tests/unit/feedback-analysis-reply.test.ts
+    - tests/unit/feedback-analysis-service.test.ts
+    - tests/unit/feedback-analysis-view-state.test.ts
   version: 1
   source: BRD v1.0 §16 ("AI may summarize customer feedback"); §30 FR-12 (Future/Medium); §25 Release 6; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -2058,7 +2087,14 @@
   title: The AI can identify recurring themes in submitted feedback
   module: TRV
   priority: could
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/feedback-analysis.spec.ts
+    - tests/api/feedback-analysis.http.spec.ts
+    - tests/unit/feedback-analysis-prompt.test.ts
+    - tests/unit/feedback-analysis-reply.test.ts
+    - tests/unit/feedback-analysis-service.test.ts
+    - tests/unit/feedback-analysis-view-state.test.ts
   version: 1
   source: BRD v1.0 §16 ("identify recurring themes"; example theme "schedules are too busy"); §30 FR-12; §26
   acceptance:
@@ -2128,7 +2164,12 @@
   title: The admin dashboard shows usage metrics
   module: TRV
   priority: should
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/admin-dashboard.spec.ts
+    - tests/api/admin-metrics.http.spec.ts
+    - tests/unit/admin-metrics.test.ts
+    - tests/unit/admin-view-state.test.ts
   version: 1
   source: BRD v1.0 §18 ("Dashboard metrics may include total users, total trips, generated itineraries, popular destinations, average budget, feedback volume and AI usage"); §30 FR-11; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -2171,7 +2212,12 @@
   title: An Administrator can view the Trips of all Travelers
   module: TRV
   priority: should
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/admin-dashboard.spec.ts
+    - tests/api/admin-trips.http.spec.ts
+    - tests/unit/admin-trip-service.test.ts
+    - tests/unit/admin-view-state.test.ts
   version: 1
   source: BRD v1.0 §27 ("The administrator can view trips and feedback"); §30 FR-11; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -2430,7 +2476,11 @@
   title: A Travel Consultant can review and enhance an AI-generated Plan for a Traveler
   module: TRV
   priority: wont
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/admin-dashboard.spec.ts
+    - tests/api/admin-roles.http.spec.ts
+    - tests/unit/admin-roles.test.ts
   version: 1
   source: BRD v1.0 §4 ("Travel Consultant (optional) - reviews or enhances AI-generated plans for customers"); document header "Primary Users"; not in §30 or §25; clarified by client confirmation relayed in session 2026-09-23, kept as a future enhancement (per client)
   acceptance:
@@ -2849,7 +2899,12 @@
   title: Feedback on a permanently deleted Trip is kept without any link to the Traveler or the Trip
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/feedback.spec.ts
+    - tests/api/admin-feedback.http.spec.ts
+    - tests/unit/config.test.ts
+    - tests/unit/permanent-delete-feedback.test.ts
   version: 1
   source: CHG-0002; moved from REQ-TRV-015 v1 (BRD v1.0 §13; §30 FR-02; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0002 by developer confirmation 2026-09-25
   acceptance:
@@ -2867,7 +2922,11 @@
   title: An Administrator sees a Trip's summary but not its Days or Activities
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/admin-dashboard.spec.ts
+    - tests/api/admin-trips.http.spec.ts
+    - tests/unit/admin-trip-service.test.ts
   version: 1
   source: CHG-0002; moved from REQ-TRV-007 v1 (BRD v1.0 §22 Security; §30 FR-02; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0002 by developer confirmation 2026-09-25
   acceptance:

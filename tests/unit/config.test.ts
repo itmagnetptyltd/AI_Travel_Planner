@@ -171,3 +171,18 @@ describe('the public address in production', () => {
     expect(loadConfig({ ...DEVELOPMENT, APP_BASE_URL: 'http://127.0.0.1:3000' })).toMatchObject({ APP_BASE_URL: 'http://127.0.0.1:3000' });
   });
 });
+
+describe('how often deleted Trips are removed for good', () => {
+  // @covers REQ-TRV-100@v1
+  test('is every hour unless told otherwise', () => {
+    expect(loadConfig(ANTHROPIC).TRIP_PURGE_INTERVAL_MS).toBe(3_600_000);
+  });
+
+  // @covers REQ-TRV-100@v1
+  test('can be set, so a test need not wait an hour, and cannot be set beyond what a timer can wait', () => {
+    expect(loadConfig({ ...ANTHROPIC, TRIP_PURGE_INTERVAL_MS: '500' }).TRIP_PURGE_INTERVAL_MS).toBe(500);
+    expect(problemsWith({ ...ANTHROPIC, TRIP_PURGE_INTERVAL_MS: '99999999999' })).toContain('TRIP_PURGE_INTERVAL_MS');
+    expect(problemsWith({ ...ANTHROPIC, TRIP_PURGE_INTERVAL_MS: '0' })).toContain('TRIP_PURGE_INTERVAL_MS');
+  });
+});
+

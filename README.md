@@ -91,6 +91,7 @@ refuses to start and names the problem, without printing the value.
 | `APP_ENV` | yes | | `development` or `production`. In `development` mail may only go to a file outbox or to SMTP on `127.0.0.1` or `localhost` (a test inbox such as Mailpit), so it is never handed to a real mail service |
 | `APP_TIMEZONE` | yes | | An IANA timezone, such as `Australia/Sydney`. Trip reminders are sent at 09:00 in it, three days before a Trip starts |
 | `REMINDER_CHECK_INTERVAL_MS` | no | `900000` | How often the application checks for reminders that are due |
+| `TRIP_PURGE_INTERVAL_MS` | no | `3600000` | How often Trips deleted 30 days ago are removed for good. Their feedback stays, with no link to the Trip or the Traveler |
 | `SMTP_HOST` | when `smtp` | | |
 | `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | no | | |
 | `EMAIL_OUTBOX_DIR` | when `file` | | |
