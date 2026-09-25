@@ -74,8 +74,8 @@ export type WarnedPlanEffect =
 /** A Trip keeps at most this many Plan versions; the oldest goes first (ANSWERS.md, "One Plan per Trip"). */
 export const MAX_PLAN_VERSIONS = 10;
 
-/** Where a Plan version came from. A later slice adds chat. */
-export const PLAN_VERSION_SOURCES = ['generation', 'restore', 'edit', 'day-regeneration', 'trip-change'] as const;
+/** Where a Plan version came from. */
+export const PLAN_VERSION_SOURCES = ['generation', 'restore', 'edit', 'day-regeneration', 'trip-change', 'chat'] as const;
 export type PlanVersionSource = (typeof PLAN_VERSION_SOURCES)[number];
 
 /** A saved Plan, as the Web API returns it: the Plan itself and which version it is. */

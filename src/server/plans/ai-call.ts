@@ -4,7 +4,7 @@ import { AiUnavailableError, type AiReply, type AiRequest, type AiService } from
 import type { Clock } from '../clock';
 import type { TrvDatabase } from '../db/client';
 import { aiRequests } from '../db/schema';
-import { AI_REQUEST_KINDS, type AiRequestKind } from '../../shared/ai-limits';
+import { CHAT_LIMIT_KINDS, PLAN_LIMIT_KINDS, type AiRequestKind } from '../../shared/ai-limits';
 import type { AiUsageLimitService } from './ai-usage-limit-service';
 import type { PlanPrompt } from './plan-prompt';
 import type { Executor } from './plan-store';
@@ -26,6 +26,8 @@ export interface AiUnavailable {
 export interface LimitReached {
   readonly ok: false;
   readonly error: 'limit-reached';
+  /** Which limit it was: the one on Plan requests, or the one on chat messages. */
+  readonly scope: 'plan' | 'chat';
   readonly limit: number;
   readonly resetsAt: Date;
 }
@@ -34,8 +36,8 @@ export type Reservation = { readonly ok: true; readonly recordId: string } | Lim
 
 export interface AiCaller {
   /**
-   * Counts today's requests of every kind that makes or changes a Plan and records this one, in a single
-   * transaction, or says the limit is reached. SQLite runs it without interruption, so two simultaneous
+   * Counts today's requests of the same class (Plan requests, or chat messages) and records this one, in a
+   * single transaction, or says the limit is reached. SQLite runs it without interruption, so two simultaneous
    * requests cannot both see room for one more.
    */
   reserve(kind: AiRequestKind, accountId: string, tripId: string, requestText: string): Reservation;
@@ -107,7 +109,9 @@ export function createAiCaller(deps: {
 
   return {
     reserve(kind, accountId, tripId, requestText) {
-      const limit = limits.getDailyPlanGenerationLimit();
+      const scope = kind === 'chat' ? 'chat' : 'plan';
+      const limit = scope === 'chat' ? limits.getDailyChatLimit() : limits.getDailyPlanGenerationLimit();
+      const counted = scope === 'chat' ? CHAT_LIMIT_KINDS : PLAN_LIMIT_KINDS;
       const now = clock.now();
       const recordId = db.transaction((tx) => {
         const [made] = tx
@@ -116,7 +120,7 @@ export function createAiCaller(deps: {
           .where(
             and(
               eq(aiRequests.accountId, accountId),
-              inArray(aiRequests.kind, AI_REQUEST_KINDS),
+              inArray(aiRequests.kind, counted),
               gte(aiRequests.createdAt, startOfUtcDay(now)),
             ),
           )
@@ -141,7 +145,7 @@ export function createAiCaller(deps: {
         return id;
       });
       return recordId === null
-        ? { ok: false, error: 'limit-reached', limit, resetsAt: new Date(startOfUtcDay(now).getTime() + DAY_MS) }
+        ? { ok: false, error: 'limit-reached', scope, limit, resetsAt: new Date(startOfUtcDay(now).getTime() + DAY_MS) }
         : { ok: true, recordId };
     },
 

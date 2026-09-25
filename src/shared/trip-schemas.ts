@@ -87,6 +87,19 @@ export const tripChangeRequestSchema = z.object({ ...tripFields, confirmPlanChan
 export type TripInput = z.input<typeof tripInputSchema>;
 export type TripUpdate = z.input<typeof tripUpdateSchema>;
 
+/** A deleted Trip can be restored for this many days; after that it is removed for good with its Plans and chat (ANSWERS.md, "Deleting a Trip"). */
+export const TRIP_RESTORE_DAYS = 30;
+
+/** A Trip in the Traveler's list of recently deleted Trips. */
+export interface DeletedTrip {
+  readonly id: string;
+  readonly name: string;
+  readonly destination: { readonly id: string; readonly name: string; readonly country: string };
+  readonly deletedAt: string;
+  /** When it will be removed for good; it can be restored until then. */
+  readonly purgesAt: string;
+}
+
 /** A Trip as the Web API returns it. */
 export interface TripView {
   readonly id: string;

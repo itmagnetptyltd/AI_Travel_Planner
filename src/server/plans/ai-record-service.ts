@@ -62,15 +62,11 @@ export function createAiRecordService(deps: { readonly db: TrvDatabase; readonly
   };
 }
 
-/** Clears expired text now and every `everyMs`. A failure is reported, never thrown, so it cannot stop the server. */
-export function scheduleTextPurge(
-  records: Pick<AiRecordService, 'purgeExpiredText'>,
-  everyMs: number,
-  onError: (error: unknown) => void,
-): () => void {
+/** Runs `task` now and every `everyMs`. A failure is reported, never thrown, so it cannot stop the server. */
+export function schedulePurge(task: () => unknown, everyMs: number, onError: (error: unknown) => void): () => void {
   const purge = () => {
     try {
-      records.purgeExpiredText();
+      task();
     } catch (error) {
       onError(error);
     }
@@ -79,4 +75,13 @@ export function scheduleTextPurge(
   const timer = setInterval(purge, everyMs);
   timer.unref();
   return () => clearInterval(timer);
+}
+
+/** Clears expired AI text now and every `everyMs`. */
+export function scheduleTextPurge(
+  records: Pick<AiRecordService, 'purgeExpiredText'>,
+  everyMs: number,
+  onError: (error: unknown) => void,
+): () => void {
+  return schedulePurge(() => records.purgeExpiredText(), everyMs, onError);
 }

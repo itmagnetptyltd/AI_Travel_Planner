@@ -12,6 +12,10 @@ const scriptSchema = z.object({
   dayCount: z.number().int().min(1).max(14).default(8),
   /** Put in front of every Activity title, so a test can tell one generated Plan from another. */
   label: z.string().max(60).optional(),
+  /** What a chat message gets back. `echoInstructions` answers with the instructions the AI was sent, as a misbehaving AI might. */
+  chat: z
+    .object({ reply: z.string().max(2000), changes: z.array(z.unknown()).nullish(), echoInstructions: z.boolean().optional() })
+    .optional(),
 });
 
 type Script = z.infer<typeof scriptSchema>;
@@ -69,8 +73,17 @@ const suggestionText = (label: string | undefined): string =>
     },
   });
 
-/** Which of the three requests this is, told by how the request begins: a Plan, one Day, or one replacement Activity. */
-function replyTextFor(user: string, script: Script): string {
+const DEFAULT_CHAT_REPLY = 'I can help with your trip.';
+
+function chatText(system: string, script: Script): string {
+  const chat = script.chat ?? { reply: DEFAULT_CHAT_REPLY };
+  return JSON.stringify({ reply: chat.echoInstructions ? system.slice(0, 1900) : chat.reply, changes: chat.changes ?? null });
+}
+
+/** Which request this is, told by how it begins: a chat message, one Day, one replacement Activity, or a whole Plan. */
+function replyTextFor(request: { readonly system: string; readonly user: string }, script: Script): string {
+  const { user } = request;
+  if (user.startsWith('Chat about this trip.')) return chatText(request.system, script);
   const day = /^Rewrite Day (\d+) of this trip/.exec(user);
   if (day?.[1]) return dayText(Number(day[1]), script.label);
   if (user.startsWith('Suggest one activity to replace')) return suggestionText(script.label);
@@ -87,7 +100,7 @@ export function createScriptedAiService(scriptFile: string): AiService {
           request.signal.addEventListener('abort', () => reject(new AiUnavailableError('The scripted AI never answered.')));
         });
       }
-      return { text: replyTextFor(request.user, script), inputTokens: 500, outputTokens: 1_500 };
+      return { text: replyTextFor(request, script), inputTokens: 500, outputTokens: 1_500 };
     },
   };
 }

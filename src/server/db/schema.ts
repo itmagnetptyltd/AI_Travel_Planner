@@ -1,5 +1,6 @@
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { AI_REQUEST_KINDS, AI_REQUEST_STATUSES } from '../../shared/ai-limits';
+import { CHAT_ROLES, PROPOSAL_STATUSES } from '../../shared/chat-schemas';
 import { CURRENCIES } from '../../shared/currencies';
 import { PLAN_VERSION_SOURCES } from '../../shared/plan-schemas';
 import type { FoodPreference } from '../../shared/food-preferences';
@@ -147,3 +148,25 @@ export const appSettings = sqliteTable('app_settings', {
   value: text('value').notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 });
+
+/**
+ * A Trip's chat: what the Traveler said and what the AI answered, oldest first (`seq` orders them within a
+ * Trip). An AI message may carry a proposed change to the Plan, and whether it is still waiting. The rows go
+ * with the Trip, whether it is deleted for good by the purge or by the account's removal.
+ */
+export const chatMessages = sqliteTable(
+  'chat_messages',
+  {
+    id: text('id').primaryKey(),
+    tripId: text('trip_id')
+      .notNull()
+      .references(() => trips.id, { onDelete: 'cascade' }),
+    seq: integer('seq').notNull(),
+    role: text('role', { enum: CHAT_ROLES }).notNull(),
+    text: text('text').notNull(),
+    proposalJson: text('proposal_json'),
+    proposalStatus: text('proposal_status', { enum: PROPOSAL_STATUSES }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [uniqueIndex('chat_messages_trip_seq_idx').on(table.tripId, table.seq)],
+);

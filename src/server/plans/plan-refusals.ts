@@ -1,4 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { CHAT_LIMIT_REACHED } from '../../shared/chat-schemas';
 import {
   ACTIVITY_NOT_FOUND,
   AI_UNAVAILABLE,
@@ -40,8 +41,8 @@ export function replyToRefusal(request: FastifyRequest, reply: FastifyReply, ref
       return reply.code(404).send({ code: ACTIVITY_NOT_FOUND, message: 'That Activity is not in the Plan.' });
     case 'limit-reached':
       return reply.code(429).send({
-        code: PLAN_LIMIT_REACHED,
-        message: `You have reached today's limit of ${refusal.limit} Plan generations. It resets at ${resetTimeText(refusal.resetsAt)}.`,
+        code: refusal.scope === 'chat' ? CHAT_LIMIT_REACHED : PLAN_LIMIT_REACHED,
+        message: `You have reached today's limit of ${refusal.limit} ${refusal.scope === 'chat' ? 'chat messages' : 'Plan generations'}. It resets at ${resetTimeText(refusal.resetsAt)}.`,
         limit: refusal.limit,
         resetsAt: refusal.resetsAt.toISOString(),
       });

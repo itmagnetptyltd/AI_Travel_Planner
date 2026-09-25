@@ -36,7 +36,7 @@ const refused = (error: PlanEditError): PlanEditResult => ({ ok: false, error })
 const done = (plan: PlanView): PlanEditResult => ({ ok: true, plan });
 
 /** A Day's Activities in start-time order. `sort` is stable, so equal times keep the order they had. */
-const inTimeOrder = (activities: readonly PlanActivity[]): readonly PlanActivity[] =>
+export const inTimeOrder = <T extends { readonly startTime: string }>(activities: readonly T[]): readonly T[] =>
   [...activities].sort((a, b) => a.startTime.localeCompare(b.startTime));
 
 function withEdit(activity: PlanActivity, edit: ActivityEdit): PlanActivity {

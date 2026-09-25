@@ -1066,7 +1066,15 @@
   title: A Trip page offers a chat box tied to that Trip
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/chat.spec.ts
+    - tests/api/chat.http.spec.ts
+    - tests/unit/chat-hardening.test.ts
+    - tests/unit/chat-service.test.ts
+    - tests/unit/chat-view-state.test.ts
+    - tests/unit/scripted-ai-chat.test.ts
+    - tests/unit/trip-retention.test.ts
   version: 1
   source: BRD v1.0 §9 ("The application must provide a chat box associated with the current trip"); §30 FR-05; §27; §25 Release 3; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -1094,7 +1102,13 @@
   title: Chat messages give the AI the Trip's current Plan and travel preferences as context
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/chat.spec.ts
+    - tests/api/chat.http.spec.ts
+    - tests/unit/chat-hardening.test.ts
+    - tests/unit/chat-prompt.test.ts
+    - tests/unit/chat-service.test.ts
   version: 1
   source: BRD v1.0 §9 ("The AI should use the current itinerary and trip preferences as context"); §27 ("while retaining trip context"); clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -1123,7 +1137,17 @@
   title: A change requested in the chat produces a correspondingly changed Plan
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/chat.spec.ts
+    - tests/api/chat.http.spec.ts
+    - tests/unit/chat-hardening.test.ts
+    - tests/unit/chat-prompt.test.ts
+    - tests/unit/chat-proposal.test.ts
+    - tests/unit/chat-reply.test.ts
+    - tests/unit/chat-service.test.ts
+    - tests/unit/chat-view-state.test.ts
+    - tests/unit/scripted-ai-chat.test.ts
   version: 1
   source: BRD v1.0 §9 (request changes such as "Remove shopping"); §27 ("The AI can make requested changes"); §30 FR-05; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -1150,7 +1174,13 @@
   title: The Traveler can see exactly which Activities a chat change added, removed or altered
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/chat.spec.ts
+    - tests/unit/chat-hardening.test.ts
+    - tests/unit/chat-proposal.test.ts
+    - tests/unit/chat-service.test.ts
+    - tests/unit/chat-view-state.test.ts
   version: 1
   source: BRD v1.0 §9 ("previewed or clearly reflected in the itinerary so the user can review them"); §29 ("Users should be able to review AI-generated changes"); clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -1169,7 +1199,11 @@
   title: A chat change aimed at one Day leaves every other Day unchanged
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - tests/api/chat.http.spec.ts
+    - tests/unit/chat-proposal.test.ts
+    - tests/unit/chat-service.test.ts
   version: 1
   source: BRD v1.0 §10 ("Small changes should not require unnecessary regeneration of unrelated parts of the trip"); §9 ("Make Day 2 less busy")
   acceptance:
@@ -1183,7 +1217,15 @@
   title: A question asked in the chat is answered without changing the Plan
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/chat.spec.ts
+    - tests/api/chat.http.spec.ts
+    - tests/unit/chat-hardening.test.ts
+    - tests/unit/chat-prompt.test.ts
+    - tests/unit/chat-reply.test.ts
+    - tests/unit/chat-service.test.ts
+    - tests/unit/scripted-ai-chat.test.ts
   version: 1
   source: BRD v1.0 §9 ("Users can ask natural-language questions"); §26 ("Can I ask the AI questions about my trip?"); clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -2694,7 +2736,12 @@
   title: A deleted Trip can be restored with its Plan and chat for 30 days, then is removed
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/chat.spec.ts
+    - tests/api/trip-restore.http.spec.ts
+    - tests/unit/deleted-trips-state.test.ts
+    - tests/unit/trip-retention.test.ts
   version: 1
   source: CHG-0002; moved from REQ-TRV-015 v1 (BRD v1.0 §13; §30 FR-02; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0002 by developer confirmation 2026-09-25
   acceptance:
@@ -2789,7 +2836,13 @@
   title: When the AI fails, the chat shows that the AI is unavailable
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/chat.spec.ts
+    - tests/api/chat.http.spec.ts
+    - tests/unit/chat-service.test.ts
+    - tests/unit/chat-view-state.test.ts
+    - tests/unit/scripted-ai-chat.test.ts
   version: 1
   source: CHG-0003; moved from REQ-TRV-029 v1 (BRD v1.0 §29 ("AI failures should have a clear fallback message"); §30 FR-04; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0003 by developer confirmation 2026-09-25
   acceptance:
@@ -2803,7 +2856,10 @@
   title: Chat requests sent to the AI do not contain the Traveler's account email address
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - tests/unit/chat-prompt.test.ts
+    - tests/unit/chat-service.test.ts
   version: 1
   source: CHG-0003; moved from REQ-TRV-033 v1 (BRD v1.0 §29 ("Sensitive personal information should not be unnecessarily included in AI prompts"); §30 FR-04; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0003 by developer confirmation 2026-09-25
   acceptance:

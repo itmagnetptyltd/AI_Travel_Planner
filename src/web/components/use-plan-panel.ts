@@ -39,6 +39,8 @@ export interface PlanPanelController {
   readonly regeneratePlan: () => void;
   readonly restore: (version: number) => void;
   readonly cancelPending: () => void;
+  /** Puts a Plan that was saved elsewhere, such as by accepting a chat change, on show. */
+  readonly showPlan: (plan: SavedPlan) => void;
   readonly actions: PlanActions;
 }
 
@@ -138,6 +140,11 @@ export function usePlanPanel(tripId: string, onPlanSaved: () => void): PlanPanel
     regeneratePlan: () => void save('generating', (confirmed) => api<SavedPlan>('POST', planPath, withConfirmation(confirmed))),
     restore: (version) => void save('restoring', () => api<SavedPlan>('POST', `${planPath}/versions/${version}/restore`)),
     cancelPending: () => setPending(null),
+    showPlan: (plan) => {
+      setPending(null);
+      setPanel((previous) => ({ ...previous, plan, notice: null }));
+      void loadVersions();
+    },
     actions,
   };
 }

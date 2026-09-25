@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { TripView } from '../../shared/trip-schemas';
 import { api } from '../api-client';
+import { DeletedTrips } from '../components/DeletedTrips';
 import { travelersLabel } from './trip-labels';
 
 type TripsState =
@@ -12,6 +13,7 @@ type TripsState =
 /** The Traveler's own saved Trips (REQ-TRV-016). */
 export function TripsPage() {
   const [trips, setTrips] = useState<TripsState>({ state: 'loading' });
+  const [reloads, setReloads] = useState(0);
 
   useEffect(() => {
     let isCurrent = true;
@@ -26,7 +28,7 @@ export function TripsPage() {
     return () => {
       isCurrent = false;
     };
-  }, []);
+  }, [reloads]);
 
   return (
     <>
@@ -38,6 +40,7 @@ export function TripsPage() {
       {trips.state === 'loaded' && trips.trips.length === 0 ? <p>You have no Trips yet.</p> : null}
       {trips.state === 'loaded' && trips.trips.length > 0 ? <TripTable trips={trips.trips} /> : null}
       {trips.state === 'failed' ? <p role="alert">{trips.message}</p> : null}
+      <DeletedTrips onRestored={() => setReloads((count) => count + 1)} />
     </>
   );
 }

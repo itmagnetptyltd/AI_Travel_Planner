@@ -23,7 +23,7 @@ export interface PlanReplyTrip {
 const text = (max: number) => z.string().trim().min(1).max(max);
 const wholeCost = z.number().nonnegative().max(10_000_000).transform(Math.round);
 
-const activitySchema = z.object({
+export const activitySchema = z.object({
   title: text(200),
   startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
   durationMinutes: z.number().int().min(1).max(24 * 60),
@@ -45,7 +45,7 @@ const replySchema = z.object({
 });
 
 /** The JSON object in a reply, allowing for a code fence or a sentence around it. */
-function jsonIn(reply: string): unknown {
+export function jsonIn(reply: string): unknown {
   const start = reply.indexOf('{');
   const end = reply.lastIndexOf('}');
   if (start === -1 || end <= start) return undefined;
