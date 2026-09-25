@@ -15,7 +15,9 @@ function useSession(): SessionState {
     let isCurrent = true;
     void api<{ role: Role }>('GET', '/api/sessions/current').then((result) => {
       if (!isCurrent) return;
-      setSession(result.ok ? { state: 'logged-in', role: result.data.role } : { state: 'logged-out' });
+      setSession(
+        result.ok ? { state: 'logged-in', role: result.data.role } : { state: 'logged-out' },
+      );
     });
     return () => {
       isCurrent = false;
@@ -65,16 +67,26 @@ function SignedInLayout({ role, children }: { readonly role: Role; readonly chil
   };
   return (
     <>
-      <nav aria-label="Main">
-        <Link to="/trips">Trips</Link>
-        <Link to="/destinations">Destinations</Link>
-        <Link to="/profile">Profile</Link>
-        {role === 'administrator' ? <Link to="/admin">Admin</Link> : null}
-        <button type="button" onClick={() => void logOut()}>
-          Log out
-        </button>
-      </nav>
-      <main>{children}</main>
+      <header className="app-header">
+        <div className="app-header-inner">
+          <Link to="/trips" className="brand">
+            <span className="brand-mark" aria-hidden="true">
+              AT
+            </span>
+            AI Travel Planner
+          </Link>
+          <nav aria-label="Main">
+            <Link to="/trips">Trips</Link>
+            <Link to="/destinations">Destinations</Link>
+            <Link to="/profile">Profile</Link>
+            {role === 'administrator' ? <Link to="/admin">Admin</Link> : null}
+            <button type="button" onClick={() => void logOut()}>
+              Log out
+            </button>
+          </nav>
+        </div>
+      </header>
+      <main className="app-main">{children}</main>
     </>
   );
 }
