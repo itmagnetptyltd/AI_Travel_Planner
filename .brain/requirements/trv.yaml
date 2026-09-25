@@ -232,7 +232,10 @@
   title: A Traveler's profile information is never returned to another Traveler
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - tests/api/profile-privacy.http.spec.ts
+    - tests/unit/profile-privacy.test.ts
   version: 1
   source: 'BRD v1.0 §22 Security ("protect ... personal information"); clarified by client confirmation relayed in session 2026-09-23 (privacy answer in ANSWERS.md); developer decision 2026-09-25: that answer adds no behaviour to this requirement, so it is agreed as written'
   acceptance:
