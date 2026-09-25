@@ -38,12 +38,12 @@ export function uniqueName(base: string): string {
 export async function addDestinationThroughUi(
   page: Page,
   name: string,
-  details: { readonly durationDays?: number } = {},
+  details: { readonly durationDays?: number; readonly country?: string } = {},
 ): Promise<void> {
   await page.goto('/admin/destinations');
   const form = page.getByRole('form', { name: 'Add a Destination' });
   await form.getByLabel('Name').fill(name);
-  await form.getByLabel('Country').fill('Japan');
+  await form.getByLabel('Country').fill(details.country ?? 'Japan');
   await form.getByLabel('Description').fill(`${name} description`);
   await form.getByLabel('Popular activities').fill(`${name} activities`);
   await form.getByLabel('Recommended duration (days)').fill(String(details.durationDays ?? 3));
