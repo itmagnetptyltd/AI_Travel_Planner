@@ -18,6 +18,11 @@ export interface AiScript {
     /** Answer with the instructions the AI was sent, as a misbehaving AI might. */
     readonly echoInstructions?: boolean;
   };
+  /** What an Administrator's request to analyse feedback gets back: a summary, and each theme with the word its entries contain. */
+  readonly feedback?: {
+    readonly summary?: string;
+    readonly themes?: readonly { readonly name: string; readonly matching: string }[];
+  };
 }
 
 /** Tells the e2e server's scripted AI what the next request should do. Tests run one at a time, so one file is safe. */

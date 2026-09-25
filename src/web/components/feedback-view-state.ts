@@ -5,7 +5,8 @@ import type { ApiError } from '../api-client';
 export const FEEDBACK_SAVED_MESSAGE = 'Thank you. Your feedback was saved.';
 
 /** Said beside the Save button: rating a Plan lets an Administrator open it (ANSWERS.md, "How much of a Traveler's Trip an Administrator may see"). */
-export const FEEDBACK_DISCLOSURE = 'When you give feedback, an Administrator can open this Plan to understand your feedback. Each time they do, it is recorded.';
+export const FEEDBACK_DISCLOSURE =
+  'When you give feedback, an Administrator can open this Plan to understand your feedback. Each time they do, it is recorded. An AI service may also summarise comments. Your name and email address are not sent with them, so do not write personal details in a comment.';
 
 const PLAIN_FAILURE = 'Your feedback could not be saved. Try again.';
 

@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import type { AdminFeedbackView } from '../../../shared/feedback-schemas';
 import { api } from '../../api-client';
 import { FormField } from '../../components/FormField';
+import { FeedbackAnalysisPanel } from './FeedbackAnalysisPanel';
 import { csvUrlFor, EMPTY_FEEDBACK_FORM, feedbackQuery, type FeedbackFilterForm } from './admin-view-state';
 
 type State =
@@ -20,8 +21,9 @@ const NO_TRIP = 'No longer available';
 
 /**
  * All the feedback Travelers have given (REQ-TRV-064), which can be filtered by keyword, rating, Destination and date range,
- * sorted, and exported as CSV (REQ-TRV-065). That is all it offers: filtering and reading, with no way to tag feedback.
- * The CSV is of the list as it is filtered.
+ * sorted, and exported as CSV (REQ-TRV-065). It offers filtering and reading, with no way to tag feedback, and asking the AI
+ * to summarise the comments shown or find the themes in them (REQ-TRV-066, REQ-TRV-067). The CSV and the AI's analysis are
+ * both of the list as it is filtered.
  */
 export function AdminFeedbackPage() {
   const [form, setForm] = useState<FeedbackFilterForm>(EMPTY_FEEDBACK_FORM);
@@ -101,6 +103,7 @@ export function AdminFeedbackPage() {
           <span className="muted">Exports the list as last shown{form === applied ? '' : ', not the filters you have changed since'}.</span>
         </p>
       )}
+      <FeedbackAnalysisPanel filter={applied} />
       {shown.state === 'loading' ? <p>Loading…</p> : null}
       {shown.state === 'failed' ? <p role="alert">{shown.message}</p> : null}
       {shown.state === 'loaded' && shown.feedback.length === 0 ? <p role="status">No feedback matches.</p> : null}

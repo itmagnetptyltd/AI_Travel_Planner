@@ -1,5 +1,6 @@
 import type { AdminMetrics } from '../../../shared/admin-metrics';
 import type { AdminTripSummary } from '../../../shared/admin-trips';
+import type { AnalysisBasis, FeedbackTheme } from '../../../shared/feedback-analysis';
 
 export const averageRatingLabel = (average: number | null): string => (average === null ? 'No feedback yet' : average.toFixed(1));
 
@@ -43,3 +44,12 @@ export function feedbackQuery(form: FeedbackFilterForm): string {
 
 /** The address of the CSV of the list as filtered, so what is exported is what is on show. */
 export const csvUrlFor = (form: FeedbackFilterForm): string => `/api/admin/feedback/export${feedbackQuery(form)}`;
+
+/** What an analysis was made from, so an Administrator knows whether it covers every comment shown. */
+export function analysisBasisLabel({ commentsAnalysed, commentsAvailable }: AnalysisBasis): string {
+  const comments = (count: number) => `${count} ${count === 1 ? 'comment' : 'comments'}`;
+  return commentsAnalysed === commentsAvailable ? `Based on ${comments(commentsAnalysed)}.` : `Based on the newest ${commentsAnalysed} of ${commentsAvailable} comments.`;
+}
+
+export const themeLabel = (theme: FeedbackTheme): string => `${theme.name}: ${theme.entries} ${theme.entries === 1 ? 'entry' : 'entries'}`;
+

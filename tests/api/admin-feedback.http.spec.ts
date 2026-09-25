@@ -174,7 +174,9 @@ describe('finding what recurs, through the API', () => {
       const response = await asAdmin(method, `/api/admin/feedback/${entry?.id}/tags`);
       expect(response.statusCode).toBe(404);
     }
-    expect(testApp.app.adminRoutes.some((route) => /tag|theme/i.test(route.url))).toBe(false);
+    // The one route with "theme" in it asks the AI to find themes (REQ-TRV-067); nothing puts a theme on an entry.
+    const analysisRoute = '/api/admin/feedback/themes';
+    expect(testApp.app.adminRoutes.some((route) => /tag|label|theme/i.test(route.url) && route.url !== analysisRoute)).toBe(false);
   });
 });
 

@@ -4,7 +4,7 @@ import { AiUnavailableError, type AiReply, type AiRequest, type AiService } from
 import type { Clock } from '../clock';
 import type { TrvDatabase } from '../db/client';
 import { aiRequests } from '../db/schema';
-import { CHAT_LIMIT_KINDS, PLAN_LIMIT_KINDS, type AiRequestKind } from '../../shared/ai-limits';
+import { CHAT_LIMIT_KINDS, PLAN_LIMIT_KINDS, type AnalysisKind, type LimitedAiRequestKind } from '../../shared/ai-limits';
 import type { AiUsageLimitService } from './ai-usage-limit-service';
 import type { PlanPrompt } from './plan-prompt';
 import type { Executor } from './plan-store';
@@ -40,7 +40,12 @@ export interface AiCaller {
    * single transaction, or says the limit is reached. SQLite runs it without interruption, so two simultaneous
    * requests cannot both see room for one more.
    */
-  reserve(kind: AiRequestKind, accountId: string, tripId: string, requestText: string): Reservation;
+  reserve(kind: LimitedAiRequestKind, accountId: string, tripId: string, requestText: string): Reservation;
+  /**
+   * Stores an Administrator's request to analyse feedback and returns its record. It belongs to no Trip and is not counted
+   * against any Traveler's limit: nothing here stops an Administrator asking, and each ask is on the dashboard's AI usage.
+   */
+  record(kind: AnalysisKind, administratorId: string, requestText: string): string;
   /** Asks the AI. On any failure the record is settled as failed and the caller gets the refusal to return. */
   ask(recordId: string, prompt: PlanPrompt): Promise<{ readonly reply: AiReply } | { readonly refusal: AiUnavailable }>;
   /** Records the reply and its cost on the request, as failed or succeeded. Pass `within` to join a transaction. */
@@ -147,6 +152,26 @@ export function createAiCaller(deps: {
       return recordId === null
         ? { ok: false, error: 'limit-reached', scope, limit, resetsAt: new Date(startOfUtcDay(now).getTime() + DAY_MS) }
         : { ok: true, recordId };
+    },
+
+    record(kind, administratorId, requestText) {
+      const id = randomUUID();
+      db.insert(aiRequests)
+        .values({
+          id,
+          accountId: administratorId,
+          tripId: null,
+          kind,
+          status: 'pending',
+          requestText,
+          replyText: null,
+          inputTokens: 0,
+          outputTokens: 0,
+          costMicroUsd: 0,
+          createdAt: clock.now(),
+        })
+        .run();
+      return id;
     },
 
     async ask(recordId, prompt) {

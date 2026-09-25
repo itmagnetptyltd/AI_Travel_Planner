@@ -34,6 +34,7 @@ import { createAiUsageLimitService } from './plans/ai-usage-limit-service';
 import { createAdminTripService } from './admin/admin-trip-service';
 import { createMetricsService } from './admin/metrics-service';
 import { createAdminFeedbackService } from './feedback/admin-feedback-service';
+import { createFeedbackAnalysisService } from './feedback/feedback-analysis-service';
 import { createFeedbackService } from './feedback/feedback-service';
 import { feedbackRoutes } from './feedback/feedback-routes';
 import { createNotificationServices } from './notifications/notification-services';
@@ -167,6 +168,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await feedbackRoutes(app, { sessions, feedback });
   await shareRoutes(app, { accounts, sessions, shares, rateLimitPerMinute: deps.authRateLimitPerMinute });
   await destinationRoutes(app, { sessions, destinations });
+  const adminFeedback = createAdminFeedbackService({ db: deps.db });
   await adminRoutes(app, {
     accounts,
     sessions,
@@ -175,7 +177,8 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     aiLimits,
     aiRecords,
     notificationSettings,
-    adminFeedback: createAdminFeedbackService({ db: deps.db }),
+    adminFeedback,
+    feedbackAnalysis: createFeedbackAnalysisService({ ...aiDeps, feedback: adminFeedback }),
     adminTrips: createAdminTripService({ db: deps.db, clock: deps.clock, store: planStore }),
     metrics: createMetricsService({ db: deps.db }),
     registeredRoutes: registeredAdminRoutes,

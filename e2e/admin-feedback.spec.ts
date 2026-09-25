@@ -116,8 +116,10 @@ test.describe('the Administrator reviewing feedback', () => {
     await page.goto('/admin/feedback');
 
     await expect(page.getByRole('heading', { name: 'Feedback' })).toBeVisible();
-    await expect(page.getByRole('button', { name: /tag|theme|label/i })).toHaveCount(0);
-    await expect(page.getByRole('link', { name: /tag|theme|label/i })).toHaveCount(0);
+    // "Find recurring themes" asks the AI (REQ-TRV-067); nothing here tags an entry with a theme.
+    await expect(page.getByRole('button', { name: /tag|label/i })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: /tag|label/i })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /theme/i })).toHaveCount(1);
     await expect(page.getByRole('checkbox')).toHaveCount(0);
   });
 });

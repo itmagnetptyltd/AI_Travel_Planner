@@ -137,7 +137,8 @@ export const aiRequests = sqliteTable(
   {
     id: text('id').primaryKey(),
     accountId: text('account_id').notNull(),
-    tripId: text('trip_id').notNull(),
+    /** Null for a request that belongs to no Trip: an Administrator's analysis of feedback. */
+    tripId: text('trip_id'),
     kind: text('kind', { enum: AI_REQUEST_KINDS }).notNull(),
     status: text('status', { enum: AI_REQUEST_STATUSES }).notNull(),
     requestText: text('request_text'),
