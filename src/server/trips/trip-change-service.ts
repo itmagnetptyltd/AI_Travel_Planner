@@ -4,6 +4,7 @@ import type { GenerateResult, PlanService } from '../plans/plan-service';
 import type { PlanStore } from '../plans/plan-store';
 import type { SavedPlan, WarnedPlanEffect } from '../../shared/plan-schemas';
 import type { TripUpdate, TripView } from '../../shared/trip-schemas';
+import type { ItineraryChange } from '../../shared/notification-schemas';
 import type { TripResult, TripService } from './trip-service';
 
 /** What a change to a Trip does to the Trip's Plan (REQ-TRV-098). */
@@ -16,7 +17,8 @@ export type PlanEffect =
   | { readonly kind: 'adjust' };
 
 export type ChangeResult =
-  | { readonly ok: true; readonly trip: TripView }
+  /** `itineraryChange` says what became of a Plan that existed: its dates moved, or it was written again for a new Destination. */
+  | { readonly ok: true; readonly trip: TripView; readonly itineraryChange?: ItineraryChange }
   | Extract<TripResult, { ok: false }>
   | { readonly ok: false; readonly error: 'needs-confirmation'; readonly effect: WarnedPlanEffect }
   | Extract<GenerateResult, { ok: false }>;
@@ -43,6 +45,9 @@ function planEffectOf(before: TripView, after: TripView, plan: SavedPlan): PlanE
   const droppedDays = plan.days.slice(after.dayCount).map((day) => day.dayNumber);
   return { kind: 'drop-days', droppedDays };
 }
+
+const withChange = (result: ChangeResult, itineraryChange: ItineraryChange): ChangeResult =>
+  result.ok ? { ...result, itineraryChange } : result;
 
 export function createTripChangeService(deps: {
   readonly db: TrvDatabase;
@@ -71,14 +76,14 @@ export function createTripChangeService(deps: {
       const effect = plan ? planEffectOf(before, previewed.trip, plan) : NO_EFFECT;
 
       if (effect.kind === 'none' || !plan) return trips.update(ownerId, tripId, change);
-      if (effect.kind === 'adjust') return changeWithAdjustedPlan(ownerId, tripId, change, plan);
+      if (effect.kind === 'adjust') return withChange(changeWithAdjustedPlan(ownerId, tripId, change, plan), 'dates');
       if (options.confirmPlanChange !== true) return { ok: false, error: 'needs-confirmation', effect };
-      if (effect.kind === 'drop-days') return changeWithAdjustedPlan(ownerId, tripId, change, plan);
+      if (effect.kind === 'drop-days') return withChange(changeWithAdjustedPlan(ownerId, tripId, change, plan), 'dates');
 
       const generated = await plans.generate(ownerId, tripId, { confirmReplaceEdits: true, tripChange: change });
       if (!generated.ok) return generated;
       const changed = trips.getForOwner(ownerId, tripId);
-      return changed ? { ok: true, trip: changed } : { ok: false, error: 'not-found' };
+      return changed ? { ok: true, trip: changed, itineraryChange: 'destination' } : { ok: false, error: 'not-found' };
     },
   };
 }

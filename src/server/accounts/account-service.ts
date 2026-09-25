@@ -9,13 +9,18 @@ import type { BreachedPasswordChecker } from './breached-password-checker';
 import { createEmailTokenStore } from './email-token-store';
 import { hashPassword, verifyPassword } from './password-hasher';
 import { checkPassword, type PasswordProblem } from './password-policy';
+import type { NotificationSettings, NotificationSettingsUpdate } from '../../shared/notification-schemas';
 
 export interface Profile {
   readonly displayName: string | null;
   readonly preferredCurrency: string | null;
   readonly defaultTravelStyle: string | null;
   readonly foodPreference: string | null;
+  readonly notifications: NotificationSettings;
 }
+
+/** What a Traveler may change in their profile: any of the fields, and any of their notification switches. */
+export type ProfileChanges = Partial<Omit<Profile, 'notifications'>> & { readonly notifications?: NotificationSettingsUpdate };
 
 export interface AccountView {
   readonly id: string;
@@ -58,7 +63,7 @@ export interface AccountService {
   resetPassword(input: { token: string; newPassword: string }): Promise<TokenResult>;
   findAccount(accountId: string): Promise<AccountView | null>;
   getProfile(accountId: string): Promise<Profile | null>;
-  updateProfile(accountId: string, update: Partial<Profile>): Promise<Profile>;
+  updateProfile(accountId: string, update: ProfileChanges): Promise<Profile>;
 }
 
 /** Email addresses are compared case-insensitively and without surrounding space. */
@@ -167,7 +172,8 @@ export function createAccountService(deps: AccountServiceDeps): AccountService {
     },
 
     async updateProfile(accountId, update) {
-      db.update(accounts).set(pickProfileFields(update)).where(eq(accounts.id, accountId)).run();
+      const changes = pickProfileFields(update);
+      if (Object.keys(changes).length > 0) db.update(accounts).set(changes).where(eq(accounts.id, accountId)).run();
       const account = findById(accountId);
       if (!account) {
         throw new Error(`Profile update for unknown account ${accountId}`);
@@ -183,15 +189,24 @@ function toProfile(account: typeof accounts.$inferSelect): Profile {
     preferredCurrency: account.preferredCurrency,
     defaultTravelStyle: account.defaultTravelStyle,
     foodPreference: account.foodPreference,
+    notifications: {
+      tripCreated: account.notifyTripCreated,
+      itineraryUpdated: account.notifyItineraryUpdated,
+      tripReminder: account.notifyTripReminder,
+    },
   };
 }
 
 /** Copies only the profile fields, by name — never the caller's whole object. */
-function pickProfileFields(update: Partial<Profile>): Partial<Profile> {
+function pickProfileFields(update: ProfileChanges): Partial<typeof accounts.$inferInsert> {
+  const { notifications } = update;
   return {
     ...(update.displayName !== undefined ? { displayName: update.displayName } : {}),
     ...(update.preferredCurrency !== undefined ? { preferredCurrency: update.preferredCurrency } : {}),
     ...(update.defaultTravelStyle !== undefined ? { defaultTravelStyle: update.defaultTravelStyle } : {}),
     ...(update.foodPreference !== undefined ? { foodPreference: update.foodPreference } : {}),
+    ...(notifications?.tripCreated !== undefined ? { notifyTripCreated: notifications.tripCreated } : {}),
+    ...(notifications?.itineraryUpdated !== undefined ? { notifyItineraryUpdated: notifications.itineraryUpdated } : {}),
+    ...(notifications?.tripReminder !== undefined ? { notifyTripReminder: notifications.tripReminder } : {}),
   };
 }

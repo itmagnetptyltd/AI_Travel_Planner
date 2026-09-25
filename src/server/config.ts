@@ -2,11 +2,31 @@ import { z } from 'zod';
 
 const booleanFromString = z.enum(['true', 'false']).transform((value) => value === 'true');
 
+/** The machines a development test inbox (such as Mailpit) runs on. Anything else is a real mail service. */
+const LOCAL_MAIL_HOSTS: readonly string[] = ['127.0.0.1', 'localhost', '::1'];
+
+/** The longest a timer can wait: beyond this Node runs it every millisecond instead. */
+const MAX_TIMER_MS = 2_147_483_647;
+
+const isTimezone = (name: string): boolean => {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: name });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 const configSchema = z
   .object({
     PORT: z.coerce.number().int().positive().default(3000),
     HOST: z.string().min(1).default('127.0.0.1'),
     APP_BASE_URL: z.url(),
+    /** In development mail may only go to a test inbox, never to a transactional service (REQ-TRV-054). */
+    APP_ENV: z.enum(['development', 'production']),
+    /** The timezone Trip reminders are timed in: 09:00 here, three days before a Trip starts (REQ-TRV-057). */
+    APP_TIMEZONE: z.string().min(1).refine(isTimezone, 'must be an IANA timezone such as Australia/Sydney'),
+    REMINDER_CHECK_INTERVAL_MS: z.coerce.number().int().positive().max(MAX_TIMER_MS).default(900_000),
     DATABASE_PATH: z.string().min(1),
     EMAIL_TRANSPORT: z.enum(['smtp', 'file']),
     EMAIL_FROM: z.email(),
@@ -31,6 +51,12 @@ const configSchema = z
   .superRefine((value, ctx) => {
     if (value.EMAIL_TRANSPORT === 'smtp' && !value.SMTP_HOST) {
       ctx.addIssue({ code: 'custom', path: ['SMTP_HOST'], message: 'required when EMAIL_TRANSPORT=smtp' });
+    }
+    if (value.APP_ENV === 'development' && value.EMAIL_TRANSPORT === 'smtp' && value.SMTP_HOST && !LOCAL_MAIL_HOSTS.includes(value.SMTP_HOST.toLowerCase())) {
+      ctx.addIssue({ code: 'custom', path: ['SMTP_HOST'], message: 'in development, mail may only go to a test inbox on 127.0.0.1 or localhost' });
+    }
+    if (value.APP_ENV === 'production' && !value.APP_BASE_URL.startsWith('https://')) {
+      ctx.addIssue({ code: 'custom', path: ['APP_BASE_URL'], message: 'must be an https address in production, because emailed links use it' });
     }
     if (value.EMAIL_TRANSPORT === 'file' && !value.EMAIL_OUTBOX_DIR) {
       ctx.addIssue({ code: 'custom', path: ['EMAIL_OUTBOX_DIR'], message: 'required when EMAIL_TRANSPORT=file' });

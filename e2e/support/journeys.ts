@@ -5,7 +5,8 @@ import { E2E_OUTBOX_DIR } from '../../playwright.config';
 
 export const PASSWORD = 'amber-lantern-harbour'; // itm-sdlc:allow-secret - synthetic test password
 
-interface OutboxMessage {
+export interface OutboxMessage {
+  readonly from?: string;
   readonly to: string;
   readonly subject: string;
   readonly text: string;
@@ -16,7 +17,8 @@ export function uniqueEmail(label: string): string {
   return `${label}-${Date.now()}-${Math.floor(Math.random() * 1e6)}@example.com`;
 }
 
-async function messagesTo(address: string): Promise<OutboxMessage[]> {
+/** Every email written to the outbox for this address, oldest first. */
+export async function emailsTo(address: string): Promise<OutboxMessage[]> {
   const files = await readdir(E2E_OUTBOX_DIR).catch(() => [] as string[]);
   const messages = await Promise.all(
     files.sort().map(async (file) => JSON.parse(await readFile(join(E2E_OUTBOX_DIR, file), 'utf8')) as OutboxMessage),
@@ -24,12 +26,25 @@ async function messagesTo(address: string): Promise<OutboxMessage[]> {
   return messages.filter((message) => message.to === address);
 }
 
+/** Waits for an email to the address whose subject matches, and returns the whole message. */
+export async function waitForEmail(address: string, subject: RegExp): Promise<OutboxMessage> {
+  let found: OutboxMessage | undefined;
+  await expect
+    .poll(async () => {
+      found = (await emailsTo(address)).reverse().find((message) => subject.test(message.subject));
+      return found !== undefined;
+    })
+    .toBe(true);
+  if (!found) throw new Error(`No email to ${address} matching ${subject}`);
+  return found;
+}
+
 /** Waits for an email to the address whose subject matches, and returns the link in it as a path. */
 export async function linkFromEmail(address: string, subject: RegExp): Promise<string> {
   let link = '';
   await expect
     .poll(async () => {
-      const match = (await messagesTo(address)).reverse().find((m) => subject.test(m.subject));
+      const match = (await emailsTo(address)).reverse().find((m) => subject.test(m.subject));
       link = match?.text.match(/https?:\/\/\S+/)?.[0] ?? '';
       return link;
     })

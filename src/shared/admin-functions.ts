@@ -8,7 +8,7 @@ export const ADMIN_FUNCTIONS = Object.freeze([
   { key: 'users', label: 'Users', path: '/admin/users' },
   { key: 'destinations', label: 'Destinations', path: '/admin/destinations' },
   { key: 'feedback', label: 'Feedback', path: null },
-  { key: 'notification-settings', label: 'Notification settings', path: null },
+  { key: 'notification-settings', label: 'Notification settings', path: '/admin/notification-settings' },
   { key: 'ai-usage-limits', label: 'AI usage limits', path: '/admin/ai-usage-limits' },
 ] as const);
 

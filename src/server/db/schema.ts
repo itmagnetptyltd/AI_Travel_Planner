@@ -2,6 +2,7 @@ import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqli
 import { AI_REQUEST_KINDS, AI_REQUEST_STATUSES } from '../../shared/ai-limits';
 import { CHAT_ROLES, PROPOSAL_STATUSES } from '../../shared/chat-schemas';
 import { CURRENCIES } from '../../shared/currencies';
+import { NOTIFICATION_EVENTS } from '../../shared/notification-schemas';
 import { PLAN_VERSION_SOURCES } from '../../shared/plan-schemas';
 import type { FoodPreference } from '../../shared/food-preferences';
 import type { TravelStyle } from '../../shared/travel-styles';
@@ -19,6 +20,10 @@ export const accounts = sqliteTable('accounts', {
   defaultTravelStyle: text('default_travel_style'),
   foodPreference: text('food_preference'),
   disabledAt: integer('disabled_at', { mode: 'timestamp_ms' }),
+  /** The Traveler's own switches for the emails they may turn off (REQ-TRV-060). All start on. */
+  notifyTripCreated: integer('notify_trip_created', { mode: 'boolean' }).notNull().default(true),
+  notifyItineraryUpdated: integer('notify_itinerary_updated', { mode: 'boolean' }).notNull().default(true),
+  notifyTripReminder: integer('notify_trip_reminder', { mode: 'boolean' }).notNull().default(true),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
 });
 
@@ -83,6 +88,8 @@ export const trips = sqliteTable(
     accommodation: text('accommodation', { mode: 'json' }).$type<AccommodationPreferences | null>(),
     status: text('status', { enum: TRIP_STATUSES }).notNull(),
     deletedAt: integer('deleted_at', { mode: 'timestamp_ms' }),
+    /** Set when the Trip's one reminder is claimed, so it is never sent twice (REQ-TRV-057). */
+    reminderSentAt: integer('reminder_sent_at', { mode: 'timestamp_ms' }),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
   },
@@ -169,4 +176,38 @@ export const chatMessages = sqliteTable(
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   },
   (table) => [uniqueIndex('chat_messages_trip_seq_idx').on(table.tripId, table.seq)],
+);
+
+/**
+ * A link to the read-only view of a Trip's Plan (REQ-TRV-058). Only a hash of the token is kept, so a copy of the
+ * database yields no working link. `recipient_email` is null for the link in a Traveler's own Plan email.
+ */
+export const planShares = sqliteTable(
+  'plan_shares',
+  {
+    id: text('id').primaryKey(),
+    tripId: text('trip_id')
+      .notNull()
+      .references(() => trips.id, { onDelete: 'cascade' }),
+    tokenHash: text('token_hash').notNull().unique(),
+    recipientEmail: text('recipient_email'),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+    expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+    revokedAt: integer('revoked_at', { mode: 'timestamp_ms' }),
+  },
+  (table) => [index('plan_shares_trip_created_idx').on(table.tripId, table.createdAt)],
+);
+
+/** When each kind of notification email was last sent for a Trip, so "at most one an hour" can be kept (REQ-TRV-056). */
+export const notificationLog = sqliteTable(
+  'notification_log',
+  {
+    id: text('id').primaryKey(),
+    tripId: text('trip_id')
+      .notNull()
+      .references(() => trips.id, { onDelete: 'cascade' }),
+    kind: text('kind', { enum: NOTIFICATION_EVENTS }).notNull(),
+    sentAt: integer('sent_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [index('notification_log_trip_kind_idx').on(table.tripId, table.kind, table.sentAt)],
 );

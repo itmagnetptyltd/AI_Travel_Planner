@@ -6,6 +6,7 @@ import { parseBody, parseQuery } from '../http/validation';
 import { PLAN_CHANGE_NEEDS_CONFIRMATION, type WarnedPlanEffect } from '../../shared/plan-schemas';
 import { tripFilterSchema } from '../../shared/trip-filter';
 import { tripChangeRequestSchema, tripInputSchema } from '../../shared/trip-schemas';
+import type { NotificationService } from '../notifications/notification-service';
 import { replyToRefusal } from '../plans/plan-refusals';
 import type { ChangeResult, TripChangeService } from './trip-change-service';
 import type { TripResult, TripService } from './trip-service';
@@ -24,6 +25,7 @@ export async function tripRoutes(
     readonly sessions: SessionService;
     readonly trips: TripService;
     readonly tripChanges: TripChangeService;
+    readonly notifications: NotificationService;
   },
 ): Promise<void> {
   const { trips } = deps;
@@ -40,7 +42,9 @@ export async function tripRoutes(
   app.post('/api/trips', { preHandler: [loggedIn, confirmed] }, async (request, reply) => {
     const body = await parseBody(tripInputSchema, request.body, reply);
     if (!body.ok) return;
-    return replyWith(reply, trips.create(ownerOf(request), body.value), 201);
+    const created = trips.create(ownerOf(request), body.value);
+    if (created.ok) await deps.notifications.tripCreated(ownerOf(request), created.trip);
+    return replyWith(reply, created, 201);
   });
 
   app.get('/api/trips/deleted', { preHandler: loggedIn }, async (request) => ({ trips: trips.listDeleted(ownerOf(request)) }));
@@ -59,6 +63,7 @@ export async function tripRoutes(
     if (!body.ok) return;
     const { confirmPlanChange, ...change } = body.value;
     const result = await deps.tripChanges.change(ownerOf(request), request.params.id, change, { confirmPlanChange });
+    if (result.ok && result.itineraryChange) await deps.notifications.itineraryUpdated(ownerOf(request), result.trip, result.itineraryChange);
     return replyToChange(request, reply, result);
   });
 

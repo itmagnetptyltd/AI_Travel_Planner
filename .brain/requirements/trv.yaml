@@ -982,7 +982,10 @@
   title: Emails carrying a Plan label its content as recommendations, not confirmed bookings
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - tests/api/plan-email.http.spec.ts
+    - tests/unit/plan-email-templates.test.ts
   version: 1
   source: BRD v1.0 §21; §29; §14; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -1619,7 +1622,16 @@
   title: A Traveler can receive their Trip's Plan by email at their account email address
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/email.spec.ts
+    - tests/api/plan-email.http.spec.ts
+    - tests/api/plan-share.http.spec.ts
+    - tests/unit/config.test.ts
+    - tests/unit/email-sender.test.ts
+    - tests/unit/plan-email-templates.test.ts
+    - tests/unit/share-service.test.ts
+    - tests/unit/share-view-state.test.ts
   version: 1
   source: BRD v1.0 §14 ("After itinerary generation, the user can receive an itinerary email"); §30 FR-09; §27; §25 Release 5; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -1653,7 +1665,11 @@
   title: A "Trip Created" email is sent to the Traveler
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - tests/api/trip-emails.http.spec.ts
+    - tests/unit/notification-policy.test.ts
+    - tests/unit/plan-email-templates.test.ts
   version: 1
   source: BRD v1.0 §14 (example email event "Trip Created"); §30 FR-09; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -1682,7 +1698,11 @@
   title: An "Itinerary Updated" email is sent when a significant change is made to a Plan
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - tests/api/trip-emails.http.spec.ts
+    - tests/unit/notification-policy.test.ts
+    - tests/unit/plan-email-templates.test.ts
   version: 1
   source: BRD v1.0 §14 ("Users can receive notifications when a significant itinerary change is made"; example event "Itinerary Updated"); §30 FR-09; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -1717,7 +1737,15 @@
   title: A "Trip Reminder" email is sent to the Traveler before the Trip's start date
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - tests/api/trip-reminder.http.spec.ts
+    - tests/unit/config.test.ts
+    - tests/unit/email-timeout.test.ts
+    - tests/unit/plan-email-templates.test.ts
+    - tests/unit/reminder-schedule.test.ts
+    - tests/unit/reminder-scheduler.test.ts
+    - tests/unit/reminder-service.test.ts
   version: 1
   source: BRD v1.0 §14 ("The system can send trip reminders before the travel date"; example event "Trip Reminder"); §30 FR-09; §25 Release 5; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -1753,7 +1781,17 @@
   title: A Traveler can share a Trip's Plan by entering another person's email address
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/email.spec.ts
+    - tests/api/log-secrets.http.spec.ts
+    - tests/api/plan-share.http.spec.ts
+    - tests/api/web-app.http.spec.ts
+    - tests/unit/log-redaction.test.ts
+    - tests/unit/plan-email-templates.test.ts
+    - tests/unit/share-service.test.ts
+    - tests/unit/share-token.test.ts
+    - tests/unit/share-view-state.test.ts
   version: 1
   source: BRD v1.0 §14 ("Users can share an itinerary by entering another recipient's email address"; example event "Itinerary Shared"); §13; §25 Release 5; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -1797,7 +1835,12 @@
   title: Sharing to a malformed email address is refused and no email is sent
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/email.spec.ts
+    - tests/api/plan-share.http.spec.ts
+    - tests/unit/share-service.test.ts
+    - tests/unit/share-view-state.test.ts
   version: 1
   source: BRD v1.0 §14 ("entering another recipient's email address")
   acceptance:
@@ -1811,7 +1854,15 @@
   title: Email notifications can be switched on or off for each key event
   module: TRV
   priority: must
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/notifications.spec.ts
+    - tests/api/notification-settings.http.spec.ts
+    - tests/api/trip-emails.http.spec.ts
+    - tests/api/trip-reminder.http.spec.ts
+    - tests/unit/notification-policy.test.ts
+    - tests/unit/notification-schemas.test.ts
+    - tests/unit/reminder-service.test.ts
   version: 1
   source: BRD v1.0 §21 ("Email notifications should be configurable for key events"); §30 FR-09; clarified by client confirmation relayed in session 2026-09-23
   acceptance:
@@ -2586,7 +2637,12 @@
   title: A disabled Traveler receives no Trip Reminder email
   module: TRV
   priority: should
-  status: agreed
+  status: verified
+  verified_by:
+    - e2e/notifications.spec.ts
+    - tests/api/trip-reminder.http.spec.ts
+    - tests/unit/notification-policy.test.ts
+    - tests/unit/reminder-service.test.ts
   version: 1
   source: CHG-0001; moved from REQ-TRV-071 v1 (BRD v1.0 §18; §4; clarified by client confirmation relayed in session 2026-09-23); re-agreed after CHG-0001 by developer confirmation 2026-09-24
   acceptance:

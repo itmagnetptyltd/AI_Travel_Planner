@@ -10,6 +10,8 @@ import { aFixedClock, type FixedClock } from './fixed-clock';
 
 export const BREACHED_PASSWORD = 'password1234567890'; // itm-sdlc:allow-secret - synthetic test password
 export const APP_BASE_URL = 'http://trv.test';
+/** The sender every email must carry (ANSWERS.md, "Email service and sender"). */
+export const EMAIL_FROM = 'no-reply@itmagnet.com.au';
 
 export interface TestApp {
   readonly app: FastifyInstance;
@@ -38,6 +40,19 @@ export async function buildTestApp(
     readonly seed?: (db: TrvDatabase) => void;
     /** A database file to use instead of a throwaway one, so a test can stop and start the application over it. */
     readonly databasePath?: string;
+    /** Turns logging on, writing every log line here, so a test can read what the server said. */
+    readonly logStream?: { write(line: string): void };
+    readonly authRateLimitPerMinute?: number;
+    /** A folder holding a built web app to serve, as the real application does. */
+    readonly webRoot?: string;
+    /** How long the application waits for the mail service before giving up on one email. */
+    readonly emailTimeoutMs?: number;
+    /** The public address emails link to. */
+    readonly appBaseUrl?: string;
+    /** The timezone reminders are timed in. */
+    readonly timezone?: string;
+    /** How often the application checks for due reminders. Long by default, so only the check at start-up runs. */
+    readonly reminderCheckEveryMs?: number;
   } = {},
 ): Promise<TestApp> {
   const { db, close } = openDatabase(options.databasePath ?? ':memory:');
@@ -49,12 +64,18 @@ export async function buildTestApp(
     db,
     clock,
     email,
+    emailFrom: EMAIL_FROM,
     ai,
     planSettings: { ...TEST_PLAN_SETTINGS, ...options.planSettings },
     breachedPasswords: createListBreachedPasswordChecker([BREACHED_PASSWORD]),
-    appBaseUrl: APP_BASE_URL,
+    appBaseUrl: options.appBaseUrl ?? APP_BASE_URL,
+    timezone: options.timezone ?? 'UTC',
+    reminderCheckEveryMs: options.reminderCheckEveryMs ?? 3_600_000,
     cookieSecure: false,
-    authRateLimitPerMinute: 1000,
+    authRateLimitPerMinute: options.authRateLimitPerMinute ?? 1000,
+    ...(options.emailTimeoutMs === undefined ? {} : { emailTimeoutMs: options.emailTimeoutMs }),
+    ...(options.webRoot === undefined ? {} : { webRoot: options.webRoot }),
+    ...(options.logStream ? { logger: true, logStream: options.logStream } : {}),
   });
   let isStopped = false;
   const stop = async () => {

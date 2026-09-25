@@ -5,6 +5,7 @@ import type { SessionService } from '../accounts/session-service';
 import { parseBody } from '../http/validation';
 import { PLAN_NOT_FOUND, PLAN_VERSION_NOT_FOUND } from '../../shared/plan-schemas';
 import { budgetOf } from '../../shared/trip-budget';
+import type { NotificationService } from '../notifications/notification-service';
 import type { TripService } from '../trips/trip-service';
 import { replyToRefusal, tripNotFound } from './plan-refusals';
 import type { PlanRegenerationService } from './plan-regeneration-service';
@@ -29,6 +30,7 @@ export async function planRoutes(
     readonly regeneration: PlanRegenerationService;
     readonly trips: TripService;
     readonly store: PlanStore;
+    readonly notifications: NotificationService;
   },
 ): Promise<void> {
   const loggedIn = requireTraveler(deps.sessions);
@@ -74,8 +76,13 @@ export async function planRoutes(
   app.post<{ Params: IdParams }>('/api/trips/:id/plan', { preHandler: loggedIn }, async (request, reply) => {
     const body = await parseBody(regenerationRequestSchema, request.body, reply);
     if (!body.ok) return;
+    const hadPlan = deps.store.current(request.params.id) !== null;
     const result = await deps.plans.generate(ownerOf(request), request.params.id, body.value);
-    return result.ok ? reply.code(201).send(result.plan) : replyToRefusal(request, reply, result, 'Plan generation');
+    if (!result.ok) return replyToRefusal(request, reply, result, 'Plan generation');
+    // The first Plan a Trip gets is not an update; writing a Plan again is (REQ-TRV-056).
+    const trip = hadPlan ? deps.trips.getForOwner(ownerOf(request), request.params.id) : null;
+    if (trip) await deps.notifications.itineraryUpdated(ownerOf(request), trip, 'plan');
+    return reply.code(201).send(result.plan);
   });
 
   app.post<{ Params: IdParams & { day: string } }>(
