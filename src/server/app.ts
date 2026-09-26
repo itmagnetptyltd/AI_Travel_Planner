@@ -1,4 +1,5 @@
-import { existsSync } from 'node:fs';
+import { existsSync, statSync } from 'node:fs';
+import { relative, resolve, sep } from 'node:path';
 import Fastify, { type FastifyInstance } from 'fastify';
 import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
@@ -75,7 +76,9 @@ export interface AppDeps {
 }
 
 const statusCodeOf = (error: unknown): unknown =>
-  typeof error === 'object' && error !== null && 'statusCode' in error ? error.statusCode : undefined;
+  typeof error === 'object' && error !== null && 'statusCode' in error
+    ? error.statusCode
+    : undefined;
 
 export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   const app = Fastify({ logger: loggerFor(deps) });
@@ -88,13 +91,18 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   app.setErrorHandler(async (error, request, reply) => {
     // The rate limiter refuses by throwing; that is the caller going too fast, not the server failing.
     if (statusCodeOf(error) === 429) {
-      return reply.code(429).send({ code: 'RATE_LIMITED', message: 'Too many requests. Wait a minute and try again.' });
+      return reply
+        .code(429)
+        .send({ code: 'RATE_LIMITED', message: 'Too many requests. Wait a minute and try again.' });
     }
     request.log.error({ err: error }, 'Unhandled error');
     await reply.code(500).send({ code: 'INTERNAL_ERROR', correlationId: request.id });
   });
 
-  const email = withSendTimeout(withSender(deps.email, deps.emailFrom), deps.emailTimeoutMs ?? DEFAULT_EMAIL_TIMEOUT_MS);
+  const email = withSendTimeout(
+    withSender(deps.email, deps.emailFrom),
+    deps.emailTimeoutMs ?? DEFAULT_EMAIL_TIMEOUT_MS,
+  );
   const accounts = createAccountService({
     db: deps.db,
     clock: deps.clock,
@@ -123,7 +131,12 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   const planEditor = createPlanEditorService({ trips, store: planStore });
   const chatStore = createChatStore({ db: deps.db, clock: deps.clock });
   const chat = createChatService({ ...aiDeps, chat: chatStore });
-  const { settings: notificationSettings, notifications, reminders, shares } = createNotificationServices({
+  const {
+    settings: notificationSettings,
+    notifications,
+    reminders,
+    shares,
+  } = createNotificationServices({
     db: deps.db,
     clock: deps.clock,
     email,
@@ -134,16 +147,25 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     store: planStore,
     onError: (error, what) => app.log.error({ err: loggableFailure(error) }, what),
   });
-  const feedback = createFeedbackService({ db: deps.db, clock: deps.clock, trips, store: planStore });
+  const feedback = createFeedbackService({
+    db: deps.db,
+    clock: deps.clock,
+    trips,
+    store: planStore,
+  });
   const adminAccounts = createAdminAccountService({ db: deps.db, clock: deps.clock, sessions });
   const stopPurging = scheduleTextPurge(aiRecords, AI_TEXT_PURGE_INTERVAL_MS, (error) =>
     app.log.error({ err: error }, 'Clearing expired AI text failed'),
   );
-  const stopPurgingTrips = schedulePurge(() => trips.purgeExpired(), deps.tripPurgeEveryMs ?? DEFAULT_TRIP_PURGE_INTERVAL_MS, (error) =>
-    app.log.error({ err: error }, 'Removing expired deleted Trips failed'),
+  const stopPurgingTrips = schedulePurge(
+    () => trips.purgeExpired(),
+    deps.tripPurgeEveryMs ?? DEFAULT_TRIP_PURGE_INTERVAL_MS,
+    (error) => app.log.error({ err: error }, 'Removing expired deleted Trips failed'),
   );
-  const reminderSchedule = scheduleReminderChecks(() => reminders.runCheck(), deps.reminderCheckEveryMs, (error) =>
-    app.log.error({ err: loggableFailure(error) }, 'The reminder check failed'),
+  const reminderSchedule = scheduleReminderChecks(
+    () => reminders.runCheck(),
+    deps.reminderCheckEveryMs,
+    (error) => app.log.error({ err: loggableFailure(error) }, 'The reminder check failed'),
   );
   app.addHook('onClose', async () => {
     stopPurging();
@@ -162,11 +184,23 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   });
   await profileRoutes(app, { accounts, sessions });
   await tripRoutes(app, { accounts, sessions, trips, tripChanges, notifications });
-  await planRoutes(app, { sessions, plans, regeneration: planRegeneration, trips, store: planStore, notifications });
+  await planRoutes(app, {
+    sessions,
+    plans,
+    regeneration: planRegeneration,
+    trips,
+    store: planStore,
+    notifications,
+  });
   await planEditRoutes(app, { sessions, editor: planEditor });
   await chatRoutes(app, { sessions, chat });
   await feedbackRoutes(app, { sessions, feedback });
-  await shareRoutes(app, { accounts, sessions, shares, rateLimitPerMinute: deps.authRateLimitPerMinute });
+  await shareRoutes(app, {
+    accounts,
+    sessions,
+    shares,
+    rateLimitPerMinute: deps.authRateLimitPerMinute,
+  });
   await destinationRoutes(app, { sessions, destinations });
   const adminFeedback = createAdminFeedbackService({ db: deps.db });
   await adminRoutes(app, {
@@ -193,11 +227,29 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   return app;
 }
 
+/**
+ * A file that exists under the web root, or null. The static plugin only
+ * registers files that existed when the process started, so a rebuild's new
+ * stylesheet would otherwise be answered with index.html and the browser
+ * would ignore it.
+ */
+function builtFile(webRoot: string, url: string): string | null {
+  const pathname = decodeURIComponent((url.split('?')[0] ?? '').replaceAll('\\', '/'));
+  if (!pathname.startsWith('/') || pathname.includes('\0')) return null;
+  const root = resolve(webRoot);
+  const file = resolve(root, `.${pathname}`);
+  if (file !== root && !file.startsWith(`${root}${sep}`)) return null;
+  if (!existsSync(file) || !statSync(file).isFile()) return null;
+  return relative(root, file);
+}
+
 /** Serves the built single-page app; unknown non-API paths get index.html so client routes work. */
 async function serveWebApp(app: FastifyInstance, webRoot: string): Promise<void> {
   await app.register(fastifyStatic, { root: webRoot, wildcard: false });
   app.setNotFoundHandler(async (request, reply) => {
     if (request.method === 'GET' && !request.url.startsWith('/api/')) {
+      const asset = builtFile(webRoot, request.url);
+      if (asset) return reply.sendFile(asset);
       return reply.sendFile('index.html');
     }
     return reply.code(404).send({ code: 'NOT_FOUND' });

@@ -26,14 +26,33 @@ function SharedPlanLoader({ token }: { readonly token: string }) {
   useEffect(() => {
     let isCurrent = true;
     void api<SharedPlanView>('GET', `/api/shared/${encodeURIComponent(token)}`).then((result) => {
-      if (isCurrent) setShown(result.ok ? { state: 'loaded', view: result.data } : { state: 'refused', status: result.status });
+      if (isCurrent)
+        setShown(
+          result.ok
+            ? { state: 'loaded', view: result.data }
+            : { state: 'refused', status: result.status },
+        );
     });
     return () => {
       isCurrent = false;
     };
   }, [token]);
 
-  if (shown.state === 'loading') return <p>Loading…</p>;
-  if (shown.state === 'refused') return <h1>{linkProblemMessage(shown.status)}</h1>;
-  return <ReadOnlyPlan view={shown.view} />;
+  if (shown.state === 'loading')
+    return (
+      <main className="app-main">
+        <p>Loading…</p>
+      </main>
+    );
+  if (shown.state === 'refused')
+    return (
+      <main className="app-main">
+        <h1>{linkProblemMessage(shown.status)}</h1>
+      </main>
+    );
+  return (
+    <main className="app-main">
+      <ReadOnlyPlan view={shown.view} />
+    </main>
+  );
 }
